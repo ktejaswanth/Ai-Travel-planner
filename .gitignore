@@ -17,6 +17,8 @@ frontend/coverage/
 # Java / Maven / Backend
 backend/target/
 backend/.mvn/
+backend/cp.txt
+backend/sources.txt
 *.class
 *.jar
 *.war
