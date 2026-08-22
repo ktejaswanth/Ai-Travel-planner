@@ -12,6 +12,7 @@ import {
   CloudSun,
   Compass,
   DollarSign,
+  ExternalLink,
   Hotel,
   Luggage,
   MapPin,
@@ -62,6 +63,7 @@ export const TripDetailsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<DetailTab>('Overview');
   const [showReplanModal, setShowReplanModal] = useState(false);
   const [replanApplied, setReplanApplied] = useState(false);
+  const [selectedWaypoint, setSelectedWaypoint] = useState<string>('');
   const [aiChatInput, setAiChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{ sender: 'USER' | 'AI'; text: string }>>([
     { sender: 'AI', text: "Hello! I am your TripWise AI Assistant. Ask me anything about your destination or say 'Make Day 3 more relaxed'." },
@@ -77,7 +79,7 @@ export const TripDetailsPage: React.FC = () => {
   const { data: liveWeather } = useQuery({
     queryKey: ['weather', trip?.destination],
     queryFn: async () => {
-      const res = await api.get(`/weather?destination=${encodeURIComponent(trip?.destination || 'Paris')}`);
+      const res = await api.get(`/weather?destination=${encodeURIComponent(trip?.destination || 'Hyderabad')}`);
       return res.data?.data;
     },
     enabled: !!trip?.destination,
@@ -88,7 +90,7 @@ export const TripDetailsPage: React.FC = () => {
     queryKey: ['flights', trip?.origin, trip?.destination],
     queryFn: async () => {
       const origin = trip?.origin || 'HYD';
-      const destination = trip?.destination || 'PAR';
+      const destination = trip?.destination || 'GOI';
       const res = await api.get(`/flights/search?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`);
       return res.data?.data;
     },
@@ -99,7 +101,7 @@ export const TripDetailsPage: React.FC = () => {
   const { data: liveHotels, isLoading: isHotelsLoading } = useQuery({
     queryKey: ['hotels', trip?.destination],
     queryFn: async () => {
-      const destination = trip?.destination || 'PAR';
+      const destination = trip?.destination || 'Hyderabad';
       const res = await api.get(`/hotels/search?cityCode=${encodeURIComponent(destination)}`);
       return res.data?.data;
     },
@@ -108,13 +110,51 @@ export const TripDetailsPage: React.FC = () => {
 
   // Dynamic Destination-Aware Itinerary Generator
   const itineraryDays = useMemo(() => {
-    const dest = (trip?.destination || 'Paris').trim().toLowerCase();
-    const destName = trip?.destination || 'Paris';
+    const dest = (trip?.destination || 'Hyderabad').trim().toLowerCase();
+    const destName = trip?.destination || 'Hyderabad';
+    const isHyderabad = dest.includes('hyderabad') || dest.includes('hyd') || dest.includes('hydrabad');
     const isParis = dest.includes('paris') || dest.includes('france');
     const isTokyo = dest.includes('tokyo') || dest.includes('japan');
     const isLondon = dest.includes('london') || dest.includes('uk');
-    const isNewYork = dest.includes('new york') || dest.includes('nyc');
     const isGoa = dest.includes('goa');
+
+    if (isHyderabad) {
+      return [
+        {
+          dayNumber: 1,
+          title: 'HISTORIC OLD CITY & MONUMENTS',
+          themeBorder: 'border-l-sky-500',
+          activities: [
+            { time: '09:30 AM', title: 'Charminar & Laad Bazaar Walk', desc: 'Visit the 16th-century architectural icon and famous bangle markets', dot: 'bg-sky-500' },
+            { time: '01:00 PM', title: 'Authentic Hyderabadi Dum Biryani', desc: 'Hotel Shadab / Paradise • Fragrant saffron basmati and spiced tender meat', dot: 'bg-amber-500' },
+            { time: '04:30 PM', title: 'Chowmahalla Palace & Mecca Masjid', desc: 'Opulent Nizami palace grand durbar and fountain courtyards', dot: 'bg-emerald-500' },
+          ],
+        },
+        {
+          dayNumber: 2,
+          title: 'ROYAL FORTRESSES & LAKE SUNSET',
+          themeBorder: 'border-l-indigo-500',
+          activities: [
+            { time: '09:30 AM', title: 'Golconda Fort Royal Acoustic Tour', desc: 'Explore Fateh Darwaza acoustics and hilltop citadel viewpoints', dot: 'bg-indigo-500' },
+            { time: '02:00 PM', title: 'Qutb Shahi Royal Tombs', desc: 'Intricate domed mausoleums set in landscaped gardens', dot: 'bg-amber-500' },
+            { time: '05:30 PM', title: 'Hussain Sagar Lake & Buddha Statue Boat Ride', desc: 'Monolithic statue boat cruise and Necklace Road sunset walk', dot: 'bg-sky-500' },
+          ],
+        },
+        {
+          dayNumber: 3,
+          title: replanApplied ? 'INDOOR MUSEUMS & IRANI CHAI (REPLANNED 🌧️)' : 'CRAFT VILLAGES & SCENIC HILLS',
+          themeBorder: replanApplied ? 'border-l-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10' : 'border-l-amber-500',
+          activities: replanApplied ? [
+            { time: '10:00 AM', title: 'Salar Jung Museum (Indoor Galleries)', desc: 'Veiled Rebecca marble statue, antique clock and royal artifacts • Rainproof', dot: 'bg-emerald-500' },
+            { time: '01:30 PM', title: 'Pista House Traditional Lunch & Irani Chai', desc: 'Hot chai, Osmania biscuits and culinary delicacies in covered café', dot: 'bg-emerald-500' },
+            { time: '04:30 PM', title: 'Birla Science Centre & Planetarium (Indoor)', desc: 'Interactive science dome and indoor observatory', dot: 'bg-emerald-500' },
+          ] : [
+            { time: '10:00 AM', title: 'Shilparamam Arts & Cultural Village', desc: 'Open-air artisan huts, handloom weaves and cultural crafts', dot: 'bg-amber-500' },
+            { time: '03:00 PM', title: 'Durgam Cheruvu Lake & Cable Bridge Walk', desc: 'Panoramic cable suspension bridge views and waterfront promenade', dot: 'bg-sky-500' },
+          ],
+        },
+      ];
+    }
 
     if (isParis) {
       return [
@@ -145,11 +185,9 @@ export const TripDetailsPage: React.FC = () => {
           activities: replanApplied ? [
             { time: '10:00 AM', title: 'Musée d\'Orsay (Indoor Impressionism)', desc: 'Covered Impressionist gallery • Safe from rain • Monet & Van Gogh', dot: 'bg-emerald-500' },
             { time: '01:30 PM', title: 'Galerie Vivienne & Covered Passage Cafés', desc: '19th-century glass-roofed arcade dining & artisan hot chocolate', dot: 'bg-emerald-500' },
-            { time: '04:30 PM', title: 'Panthéon Crypt & Latin Quarter Tour', desc: 'Historic indoor monument and landmark vaults', dot: 'bg-emerald-500' },
           ] : [
             { time: '10:00 AM', title: 'Montmartre & Sacré-Cœur Basilica', desc: 'Cobblestone streets, artists at Place du Tertre & city viewpoints', dot: 'bg-amber-500' },
-            { time: '02:00 PM', title: 'Latin Quarter & Shakespeare and Company', desc: 'Historic bookshops, Saint-Germain-des-Prés terraces', dot: 'bg-sky-500' },
-            { time: '05:30 PM', title: 'Notre-Dame Cathedral & Île de la Cité', desc: 'Historic heart of Paris and flower market walk', dot: 'bg-emerald-500' },
+            { time: '02:00 PM', title: 'Latin Quarter & Notre-Dame Cathedral', desc: 'Historic bookshops, Saint-Germain-des-Prés terraces', dot: 'bg-sky-500' },
           ],
         },
       ];
@@ -173,20 +211,18 @@ export const TripDetailsPage: React.FC = () => {
           themeBorder: 'border-l-indigo-500',
           activities: [
             { time: '09:30 AM', title: 'Senso-ji Temple in Asakusa', desc: 'Tokyo’s oldest Buddhist temple and Nakamise-dori shopping', dot: 'bg-indigo-500' },
-            { time: '01:30 PM', title: 'Tokyo Skytree Panoramic Lunch', desc: 'Dining atop the tallest tower in Japan', dot: 'bg-amber-500' },
             { time: '04:30 PM', title: 'Akihabara Electric Town', desc: 'Futuristic electronics, arcade culture & anime shops', dot: 'bg-sky-500' },
           ],
         },
         {
           dayNumber: 3,
-          title: replanApplied ? 'IMMERSIVE DIGITAL ART & INDOOR ONSEN (REPLANNED 🌧️)' : 'WATERFRONT & TSUKIJI TASTINGS',
+          title: replanApplied ? 'IMMERSIVE DIGITAL ART (REPLANNED 🌧️)' : 'WATERFRONT & TSUKIJI TASTINGS',
           themeBorder: replanApplied ? 'border-l-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10' : 'border-l-amber-500',
           activities: replanApplied ? [
             { time: '10:00 AM', title: 'TeamLab Planets Digital Museum (Indoor)', desc: 'Fully covered immersive sensory art experience', dot: 'bg-emerald-500' },
             { time: '01:30 PM', title: 'Ginza Six Gourmet Arcade', desc: 'Premium indoor dining and wagyu beef tasting', dot: 'bg-emerald-500' },
           ] : [
             { time: '08:30 AM', title: 'Tsukiji Outer Market Food Tour', desc: 'Fresh sashimi, tamagoyaki, and street seafood', dot: 'bg-amber-500' },
-            { time: '02:00 PM', title: 'Odaiba Seaside Park & Rainbow Bridge', desc: 'Waterfront promenade and Gundam statue', dot: 'bg-sky-500' },
           ],
         },
       ];
@@ -265,40 +301,56 @@ export const TripDetailsPage: React.FC = () => {
 
   // Destination-specific Waypoints for Map
   const mapWaypoints = useMemo(() => {
-    const dest = (trip?.destination || 'Paris').toLowerCase();
+    const dest = (trip?.destination || 'Hyderabad').toLowerCase();
+    if (dest.includes('hyderabad') || dest.includes('hyd') || dest.includes('hydrabad')) {
+      return [
+        { name: '1. Charminar & Laad Bazaar', query: 'Charminar, Hyderabad', rating: '4.8 ★' },
+        { name: '2. Golconda Fort', query: 'Golconda Fort, Hyderabad', rating: '4.7 ★' },
+        { name: '3. Hussain Sagar & Buddha Statue', query: 'Hussain Sagar, Hyderabad', rating: '4.6 ★' },
+        { name: '4. Salar Jung Museum', query: 'Salar Jung Museum, Hyderabad', rating: '4.7 ★' },
+        { name: '5. Chowmahalla Palace', query: 'Chowmahalla Palace, Hyderabad', rating: '4.6 ★' },
+      ];
+    }
     if (dest.includes('paris') || dest.includes('france')) {
       return [
-        { name: '1. Eiffel Tower & Trocadéro', rating: '4.8 ★' },
-        { name: '2. Louvre Museum & Pyramide', rating: '4.7 ★' },
-        { name: '3. Arc de Triomphe & Champs-Élysées', rating: '4.7 ★' },
-        { name: '4. Sacré-Cœur & Montmartre', rating: '4.6 ★' },
+        { name: '1. Eiffel Tower & Trocadéro', query: 'Eiffel Tower, Paris', rating: '4.8 ★' },
+        { name: '2. Louvre Museum & Pyramide', query: 'Louvre Museum, Paris', rating: '4.7 ★' },
+        { name: '3. Arc de Triomphe & Champs-Élysées', query: 'Arc de Triomphe, Paris', rating: '4.7 ★' },
+        { name: '4. Sacré-Cœur & Montmartre', query: 'Sacre-Coeur, Paris', rating: '4.6 ★' },
       ];
     }
     if (dest.includes('tokyo') || dest.includes('japan')) {
       return [
-        { name: '1. Shibuya Crossing & Hachiko', rating: '4.8 ★' },
-        { name: '2. Senso-ji Temple Asakusa', rating: '4.7 ★' },
-        { name: '3. Meiji Shrine Forest', rating: '4.6 ★' },
-        { name: '4. Tokyo Skytree Observation', rating: '4.7 ★' },
+        { name: '1. Shibuya Crossing & Hachiko', query: 'Shibuya Crossing, Tokyo', rating: '4.8 ★' },
+        { name: '2. Senso-ji Temple Asakusa', query: 'Senso-ji, Tokyo', rating: '4.7 ★' },
+        { name: '3. Meiji Shrine Forest', query: 'Meiji Shrine, Tokyo', rating: '4.6 ★' },
+        { name: '4. Tokyo Skytree Observation', query: 'Tokyo Skytree, Tokyo', rating: '4.7 ★' },
       ];
     }
     if (dest.includes('goa')) {
       return [
-        { name: '1. Baga Beach Promenade', rating: '4.6 ★' },
-        { name: '2. Aguada Fort & Lighthouse', rating: '4.5 ★' },
-        { name: '3. Basilica of Bom Jesus', rating: '4.7 ★' },
+        { name: '1. Baga Beach Promenade', query: 'Baga Beach, Goa', rating: '4.6 ★' },
+        { name: '2. Aguada Fort & Lighthouse', query: 'Aguada Fort, Goa', rating: '4.5 ★' },
+        { name: '3. Basilica of Bom Jesus', query: 'Basilica of Bom Jesus, Goa', rating: '4.7 ★' },
       ];
     }
     return [
-      { name: `1. Central ${trip?.destination || 'City'} Historic District`, rating: '4.7 ★' },
-      { name: `2. ${trip?.destination || 'City'} Grand Museum & Art Center`, rating: '4.6 ★' },
-      { name: `3. ${trip?.destination || 'City'} Botanical Promenade`, rating: '4.8 ★' },
+      { name: `1. Central ${trip?.destination || 'City'} Historic District`, query: `${trip?.destination || 'City'} center`, rating: '4.7 ★' },
+      { name: `2. ${trip?.destination || 'City'} Grand Museum & Art Center`, query: `${trip?.destination || 'City'} museum`, rating: '4.6 ★' },
+      { name: `3. ${trip?.destination || 'City'} Botanical Promenade`, query: `${trip?.destination || 'City'} park`, rating: '4.8 ★' },
     ];
   }, [trip?.destination]);
 
   // Destination-specific Hotels
   const destinationHotels = useMemo(() => {
-    const dest = (trip?.destination || 'Paris').toLowerCase();
+    const dest = (trip?.destination || 'Hyderabad').toLowerCase();
+    if (dest.includes('hyderabad') || dest.includes('hyd') || dest.includes('hydrabad')) {
+      return [
+        { id: 'ht_1', name: 'Taj Falaknuma Palace', address: 'Engine Bowli, Fatima Nagar, Hyderabad', rating: 4.9 },
+        { id: 'ht_2', name: 'ITC Kohenur, a Luxury Collection Hotel', address: 'HITEC City, Madhapur, Hyderabad', rating: 4.8 },
+        { id: 'ht_3', name: 'Park Hyatt Hyderabad', address: 'Road No. 2, Banjara Hills, Hyderabad', rating: 4.7 },
+      ];
+    }
     if (dest.includes('paris') || dest.includes('france')) {
       return [
         { id: 'ht_1', name: 'Pullman Paris Tour Eiffel', address: '18 Avenue de Suffren, 15th arr., Paris', rating: 4.8 },
@@ -405,6 +457,7 @@ export const TripDetailsPage: React.FC = () => {
 
   const packedCount = packingItems.filter((i) => i.packed).length;
   const packedPercent = Math.round((packedCount / packingItems.length) * 100);
+  const currentMapQuery = selectedWaypoint || trip.destination || 'Hyderabad';
 
   return (
     <DashboardLayout>
@@ -589,32 +642,71 @@ export const TripDetailsPage: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 3: MAP & PLACES */}
+          {/* TAB 3: LIVE INTERACTIVE MAP & PLACES */}
           {activeTab === 'Map' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <Card className="lg:col-span-8 p-6 space-y-4">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center justify-between">
-                  <span className="capitalize">{trip.destination} Interactive Map Overview</span>
-                  <Badge variant="sky">Google Maps Integration</Badge>
-                </h3>
-                <div className="bg-slate-200 dark:bg-slate-800 rounded-xl h-72 flex items-center justify-center text-center p-6 text-xs text-slate-500 dark:text-slate-400">
-                  <div>
-                    <MapPin className="h-8 w-8 text-sky-500 mx-auto mb-2" />
-                    <p className="font-bold text-slate-700 dark:text-slate-200 capitalize">{trip.destination} Interactive Map Workspace</p>
-                    <p className="text-[10px]">Showing markers for key points of interest and attractions in {trip.destination}.</p>
+              <Card className="lg:col-span-8 p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-4 w-4 text-sky-500" />
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white capitalize">
+                      Live Map of {selectedWaypoint || trip.destination}
+                    </h3>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="sky">Google Maps Live</Badge>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentMapQuery)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center text-[11px] font-semibold text-sky-600 dark:text-sky-400 hover:underline"
+                    >
+                      Open Full Map <ExternalLink className="h-3 w-3 ml-1" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Live Embedded Interactive Google Map */}
+                <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-inner h-[380px] w-full bg-slate-100 dark:bg-slate-900">
+                  <iframe
+                    title={`${trip.destination} Live Map`}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(currentMapQuery)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+                  />
                 </div>
               </Card>
 
-              <Card className="lg:col-span-4 p-6 space-y-4">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Waypoints & Route Details</h3>
+              <Card className="lg:col-span-4 p-5 space-y-3">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                  <span>Interactive Waypoints</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Click to locate</span>
+                </h3>
                 <div className="space-y-2 text-xs">
-                  {mapWaypoints.map((wp, idx) => (
-                    <div key={idx} className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex justify-between">
-                      <span>{wp.name}</span>
-                      <span className="font-semibold text-sky-500">{wp.rating}</span>
-                    </div>
-                  ))}
+                  {mapWaypoints.map((wp, idx) => {
+                    const isSelected = selectedWaypoint === wp.query;
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => setSelectedWaypoint(wp.query)}
+                        className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-400 text-sky-900 dark:text-sky-200 font-semibold shadow-sm'
+                            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-sky-300 dark:hover:border-slate-600'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <MapPin className={`h-4 w-4 ${isSelected ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400'}`} />
+                          <span>{wp.name}</span>
+                        </div>
+                        <span className="font-semibold text-amber-500">{wp.rating}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </Card>
             </div>
@@ -632,7 +724,7 @@ export const TripDetailsPage: React.FC = () => {
                   <div>
                     <h4 className="text-xs font-bold text-amber-900 dark:text-amber-300 capitalize">Live Weather ({trip.destination})</h4>
                     <p className="text-xs text-amber-700 dark:text-amber-400">
-                      {liveWeather?.alertDescription || `Current temperature is ${liveWeather?.currentTemperature || 24}°C (${liveWeather?.currentCondition || 'Partly Cloudy'}). Heavy rain expected on Day 3.`}
+                      {liveWeather?.alertDescription || `Current temperature is ${liveWeather?.currentTemperature || 29}°C (${liveWeather?.currentCondition || 'Sunny'}). Rain expected on Day 3.`}
                     </p>
                   </div>
                 </div>
@@ -644,11 +736,11 @@ export const TripDetailsPage: React.FC = () => {
               {/* 5-Day Forecast Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {(liveWeather?.forecast || [
-                  { date: 'Day 1', temperature: 24, condition: 'Sunny', rainProbability: 0.1, outdoorSuitable: true },
-                  { date: 'Day 2', temperature: 25, condition: 'Partly Cloudy', rainProbability: 0.1, outdoorSuitable: true },
-                  { date: 'Day 3', temperature: 21, condition: 'Heavy Rain', rainProbability: 0.85, outdoorSuitable: false },
-                  { date: 'Day 4', temperature: 23, condition: 'Clear Spells', rainProbability: 0.1, outdoorSuitable: true },
-                  { date: 'Day 5', temperature: 24, condition: 'Sunny', rainProbability: 0.1, outdoorSuitable: true },
+                  { date: 'Day 1', temperature: 29, condition: 'Sunny', rainProbability: 0.1, outdoorSuitable: true },
+                  { date: 'Day 2', temperature: 30, condition: 'Partly Cloudy', rainProbability: 0.1, outdoorSuitable: true },
+                  { date: 'Day 3', temperature: 26, condition: 'Heavy Rain', rainProbability: 0.85, outdoorSuitable: false },
+                  { date: 'Day 4', temperature: 28, condition: 'Clear Spells', rainProbability: 0.1, outdoorSuitable: true },
+                  { date: 'Day 5', temperature: 30, condition: 'Sunny', rainProbability: 0.1, outdoorSuitable: true },
                 ]).slice(0, 5).map((f: any, idx: number) => (
                   <Card key={idx} className={`p-4 text-center space-y-2 ${!f.outdoorSuitable ? 'border-amber-300 dark:border-amber-500/40' : ''}`}>
                     <span className="text-[10px] text-slate-400 uppercase font-bold">{f.date}</span>
@@ -674,7 +766,7 @@ export const TripDetailsPage: React.FC = () => {
             <div className="space-y-4 max-w-2xl mx-auto">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white capitalize">
-                  Live Flights ({trip.origin || 'HYD'} → {trip.destination || 'PAR'})
+                  Live Flights ({trip.origin || 'HYD'} → {trip.destination || 'GOI'})
                 </h3>
                 <Badge variant="sky">Aviationstack Live</Badge>
               </div>
@@ -684,9 +776,9 @@ export const TripDetailsPage: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {(liveFlights && liveFlights.length > 0 ? liveFlights : [
-                    { id: 'fl_1', airlineName: 'Air France', flightNumber: 'AF-225', origin: trip.origin || 'HYD', destination: trip.destination || 'CDG', departureTime: '02:15 AM', arrivalTime: '08:40 AM', duration: '9h 55m', status: 'Scheduled' },
-                    { id: 'fl_2', airlineName: 'Emirates', flightNumber: 'EK-527', origin: trip.origin || 'HYD', destination: trip.destination || 'CDG', departureTime: '10:00 AM', arrivalTime: '07:30 PM', duration: '12h 00m', status: 'Scheduled' },
-                    { id: 'fl_3', airlineName: 'Lufthansa', flightNumber: 'LH-753', origin: trip.origin || 'HYD', destination: trip.destination || 'CDG', departureTime: '03:30 AM', arrivalTime: '11:15 AM', duration: '10h 15m', status: 'Scheduled' },
+                    { id: 'fl_1', airlineName: 'IndiGo', flightNumber: '6E-512', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '06:20 AM', arrivalTime: '08:05 AM', duration: '1h 45m', status: 'Scheduled' },
+                    { id: 'fl_2', airlineName: 'Air India', flightNumber: 'AI-804', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '11:30 AM', arrivalTime: '01:25 PM', duration: '1h 55m', status: 'Scheduled' },
+                    { id: 'fl_3', airlineName: 'Akasa Air', flightNumber: 'QP-1302', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '04:45 PM', arrivalTime: '06:35 PM', duration: '1h 50m', status: 'Scheduled' },
                   ]).map((flight: any) => (
                     <Card key={flight.id} className="p-5 space-y-2">
                       <div className="flex items-center justify-between">
@@ -904,25 +996,25 @@ export const TripDetailsPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Current Plan (Rain Risk)</span>
-                <p className="text-slate-700 dark:text-slate-300">⛰️ Outdoor Hill / River Walk</p>
-                <p className="text-slate-700 dark:text-slate-300">🏛️ Open Plaza Sightseeing</p>
+                <p className="text-slate-700 dark:text-slate-300">⛰️ Outdoor Sightseeing & Walk</p>
+                <p className="text-slate-700 dark:text-slate-300">🏛️ Open Plaza Exploration</p>
               </div>
 
               <div className="p-3 bg-sky-50 dark:bg-sky-950/40 rounded-xl border border-sky-300 dark:border-sky-800 space-y-2">
                 <span className="text-[10px] text-sky-600 dark:text-sky-400 font-bold uppercase block">Proposed Alternate</span>
-                <p className="text-slate-900 dark:text-white font-medium">🏛️ National Art Museum (Indoor)</p>
-                <p className="text-slate-900 dark:text-white font-medium">🍜 Covered Arcade Culinary Lunch</p>
+                <p className="text-slate-900 dark:text-white font-medium">🏛️ Salar Jung Museum / Indoor Art (Covered)</p>
+                <p className="text-slate-900 dark:text-white font-medium">☕ Traditional Café & High Tea</p>
               </div>
             </div>
 
             <div className="grid grid-cols-4 gap-2 text-center text-xs pt-2">
               <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
                 <span className="text-[10px] text-slate-400 block">Cost Delta</span>
-                <strong className="text-emerald-600 dark:text-emerald-400">-₹450</strong>
+                <strong className="text-emerald-600 dark:text-emerald-400">-₹350</strong>
               </div>
               <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
                 <span className="text-[10px] text-slate-400 block">Travel Time</span>
-                <strong className="text-sky-600 dark:text-sky-400">-25 min</strong>
+                <strong className="text-sky-600 dark:text-sky-400">-20 min</strong>
               </div>
               <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
                 <span className="text-[10px] text-slate-400 block">Preference</span>
