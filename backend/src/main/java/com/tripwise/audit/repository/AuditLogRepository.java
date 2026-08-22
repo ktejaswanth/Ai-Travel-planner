@@ -1,5 +1,6 @@
-package com.tripwise.audit.model;
+package com.tripwise.audit.repository;
 
+import com.tripwise.audit.model.AuditLog;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
