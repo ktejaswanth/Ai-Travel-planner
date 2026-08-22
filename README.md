@@ -1,6 +1,3 @@
-Absolutely. Copy everything below directly into your `README.md`.
-
-````markdown
 # ✈️ TripWise AI — AI-Powered Travel Planning Platform
 
 TripWise AI is a full-stack AI-powered travel planning platform that helps users create, manage, and personalize trips from a single application.
