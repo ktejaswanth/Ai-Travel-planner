@@ -13,9 +13,11 @@ import com.tripwise.user.model.User;
 import com.tripwise.user.repository.UserRepository;
 import com.tripwise.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -26,7 +28,7 @@ public class AuthService {
     private final UserService userService;
 
     public AuthResponse register(RegisterRequest request) {
-        String normalizedEmail = request.getEmail().toLowerCase();
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new DuplicateResourceException("An account with this email already exists: " + request.getEmail());
         }
@@ -48,12 +50,25 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        String normalizedEmail = request.getEmail().toLowerCase();
-        User user = userRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        User user = userRepository.findByEmail(normalizedEmail).orElse(null);
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new UnauthorizedException("Invalid email or password");
+        if (user == null) {
+            // Auto-provision user if they haven't registered yet
+            String namePart = normalizedEmail.contains("@") ? normalizedEmail.split("@")[0] : "Traveler";
+            String displayName = namePart.substring(0, 1).toUpperCase() + (namePart.length() > 1 ? namePart.substring(1) : "");
+            user = User.builder()
+                    .name(displayName)
+                    .email(normalizedEmail)
+                    .passwordHash(passwordEncoder.encode(request.getPassword()))
+                    .role(Role.USER)
+                    .build();
+            user = userRepository.save(user);
+            log.info("Auto-registered and logged in new user: {}", normalizedEmail);
+        } else {
+            if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+                throw new UnauthorizedException("Invalid email or password");
+            }
         }
 
         String token = tokenProvider.generateToken(user);

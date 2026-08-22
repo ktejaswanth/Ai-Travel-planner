@@ -37,26 +37,17 @@ public class OpenWeatherAdapter implements OpenWeatherClient {
         }
 
         try {
-            // Step 1: Geocode city name to lat/lon
-            String geoUrl = String.format("https://api.openweathermap.org/geo/1.0/direct?q=%s&limit=1&appid=%s",
-                    destination, apiKey);
-            List<Map<String, Object>> geoList = restTemplate.getForObject(geoUrl, List.class);
+            // Directly call 5-day / 3-hour forecast by city query (works on standard free tier)
+            String cleanCity = destination != null ? destination.split(",")[0].trim() : "Goa";
+            String forecastUrl = String.format(
+                    "https://api.openweathermap.org/data/2.5/forecast?q=%s&units=metric&appid=%s",
+                    cleanCity, apiKey);
 
-            if (geoList != null && !geoList.isEmpty()) {
-                Map<String, Object> first = geoList.get(0);
-                double lat = ((Number) first.get("lat")).doubleValue();
-                double lon = ((Number) first.get("lon")).doubleValue();
-
-                // Step 2: Call 5-day / 3-hour forecast
-                String forecastUrl = String.format(
-                        "https://api.openweathermap.org/data/2.5/forecast?lat=%f&lon=%f&units=metric&appid=%s",
-                        lat, lon, apiKey);
-
-                Map<String, Object> forecastResponse = restTemplate.getForObject(forecastUrl, Map.class);
-                if (forecastResponse != null && forecastResponse.containsKey("list")) {
-                    List<Map<String, Object>> list = (List<Map<String, Object>>) forecastResponse.get("list");
-                    return mapOpenWeatherListToForecast(destination, list, startDate, endDate);
-                }
+            Map<String, Object> forecastResponse = restTemplate.getForObject(forecastUrl, Map.class);
+            if (forecastResponse != null && "200".equals(String.valueOf(forecastResponse.get("cod"))) && forecastResponse.containsKey("list")) {
+                List<Map<String, Object>> list = (List<Map<String, Object>>) forecastResponse.get("list");
+                log.info("Successfully fetched live forecast for {} from OpenWeatherMap API ({} intervals)", cleanCity, list.size());
+                return mapOpenWeatherListToForecast(destination, list, startDate, endDate);
             }
         } catch (Exception e) {
             log.error("OpenWeather API call failed for {}: {}", destination, e.getMessage());
@@ -73,8 +64,9 @@ public class OpenWeatherAdapter implements OpenWeatherClient {
         }
 
         try {
+            String cleanCity = destination != null ? destination.split(",")[0].trim() : "Goa";
             String url = String.format("https://api.openweathermap.org/data/2.5/weather?q=%s&units=metric&appid=%s",
-                    destination, apiKey);
+                    cleanCity, apiKey);
             return restTemplate.getForObject(url, Map.class);
         } catch (Exception e) {
             log.error("OpenWeather current weather call failed for {}: {}", destination, e.getMessage());
