@@ -526,9 +526,9 @@ export const TripDetailsPage: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {(liveFlights && liveFlights.length > 0 ? liveFlights : [
-                    { id: 'fl_1', airlineName: 'IndiGo', flightNumber: '6E-512', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '06:20 AM', arrivalTime: '08:05 AM', duration: '1h 45m', price: 7850 },
-                    { id: 'fl_2', airlineName: 'Air India', flightNumber: 'AI-804', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '11:30 AM', arrivalTime: '01:25 PM', duration: '1h 55m', price: 8400 },
-                    { id: 'fl_3', airlineName: 'Akasa Air', flightNumber: 'QP-1302', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '04:45 PM', arrivalTime: '06:35 PM', duration: '1h 50m', price: 7200 },
+                    { id: 'fl_1', airlineName: 'IndiGo', flightNumber: '6E-512', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '06:20 AM', arrivalTime: '08:05 AM', duration: '1h 45m', status: 'Scheduled' },
+                    { id: 'fl_2', airlineName: 'Air India', flightNumber: 'AI-804', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '11:30 AM', arrivalTime: '01:25 PM', duration: '1h 55m', status: 'Scheduled' },
+                    { id: 'fl_3', airlineName: 'Akasa Air', flightNumber: 'QP-1302', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '04:45 PM', arrivalTime: '06:35 PM', duration: '1h 50m', status: 'Scheduled' },
                   ]).map((flight: any) => (
                     <Card key={flight.id} className="p-5 space-y-2">
                       <div className="flex items-center justify-between">
@@ -543,9 +543,10 @@ export const TripDetailsPage: React.FC = () => {
                             </p>
                           </div>
                         </div>
-                        <strong className="text-sm font-extrabold text-slate-900 dark:text-white">
-                          ₹{flight.price?.toLocaleString()}
-                        </strong>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="emerald">Non-stop</Badge>
+                          <Badge variant="sky">Scheduled</Badge>
+                        </div>
                       </div>
                     </Card>
                   ))}
