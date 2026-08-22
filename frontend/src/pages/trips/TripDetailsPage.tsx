@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -64,20 +64,7 @@ export const TripDetailsPage: React.FC = () => {
   const [replanApplied, setReplanApplied] = useState(false);
   const [aiChatInput, setAiChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{ sender: 'USER' | 'AI'; text: string }>>([
-    { sender: 'AI', text: "Hello! I am your TripWise AI Assistant. Ask me anything or say 'Make Day 3 more relaxed'." },
-  ]);
-
-  // Packing list checklist state
-  const [packingItems, setPackingItems] = useState([
-    { id: 1, category: 'Documents', name: 'Government ID / Passport', packed: true },
-    { id: 2, category: 'Documents', name: 'Travel Insurance Documents', packed: false },
-    { id: 3, category: 'Clothing', name: 'Light Cotton T-shirts', packed: true },
-    { id: 4, category: 'Clothing', name: 'Shorts & Swimwear', packed: true },
-    { id: 5, category: 'Clothing', name: 'Comfortable Walking Shoes', packed: false },
-    { id: 6, category: 'Weather', name: 'Compact Umbrella / Raincoat', packed: false },
-    { id: 7, category: 'Weather', name: 'Sunscreen SPF 50+', packed: true },
-    { id: 8, category: 'Photography', name: 'Camera & Extra Battery', packed: false },
-    { id: 9, category: 'Electronics', name: 'Power Bank & Charging Cables', packed: true },
+    { sender: 'AI', text: "Hello! I am your TripWise AI Assistant. Ask me anything about your destination or say 'Make Day 3 more relaxed'." },
   ]);
 
   const { data: trip, isLoading, isError } = useQuery<Trip>({
@@ -87,10 +74,10 @@ export const TripDetailsPage: React.FC = () => {
   });
 
   // Dynamic Live Weather Query from OpenWeatherMap
-  const { data: liveWeather, isLoading: isWeatherLoading } = useQuery({
+  const { data: liveWeather } = useQuery({
     queryKey: ['weather', trip?.destination],
     queryFn: async () => {
-      const res = await api.get(`/weather?destination=${encodeURIComponent(trip?.destination || 'Goa')}`);
+      const res = await api.get(`/weather?destination=${encodeURIComponent(trip?.destination || 'Paris')}`);
       return res.data?.data;
     },
     enabled: !!trip?.destination,
@@ -101,7 +88,7 @@ export const TripDetailsPage: React.FC = () => {
     queryKey: ['flights', trip?.origin, trip?.destination],
     queryFn: async () => {
       const origin = trip?.origin || 'HYD';
-      const destination = trip?.destination || 'GOI';
+      const destination = trip?.destination || 'PAR';
       const res = await api.get(`/flights/search?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`);
       return res.data?.data;
     },
@@ -112,12 +99,245 @@ export const TripDetailsPage: React.FC = () => {
   const { data: liveHotels, isLoading: isHotelsLoading } = useQuery({
     queryKey: ['hotels', trip?.destination],
     queryFn: async () => {
-      const destination = trip?.destination || 'GOI';
+      const destination = trip?.destination || 'PAR';
       const res = await api.get(`/hotels/search?cityCode=${encodeURIComponent(destination)}`);
       return res.data?.data;
     },
     enabled: !!trip?.destination,
   });
+
+  // Dynamic Destination-Aware Itinerary Generator
+  const itineraryDays = useMemo(() => {
+    const dest = (trip?.destination || 'Paris').trim().toLowerCase();
+    const destName = trip?.destination || 'Paris';
+    const isParis = dest.includes('paris') || dest.includes('france');
+    const isTokyo = dest.includes('tokyo') || dest.includes('japan');
+    const isLondon = dest.includes('london') || dest.includes('uk');
+    const isNewYork = dest.includes('new york') || dest.includes('nyc');
+    const isGoa = dest.includes('goa');
+
+    if (isParis) {
+      return [
+        {
+          dayNumber: 1,
+          title: 'ARRIVAL & ICONIC LANDMARKS',
+          themeBorder: 'border-l-sky-500',
+          activities: [
+            { time: '09:30 AM', title: 'Eiffel Tower & Champ de Mars', desc: 'Visit the summit for panoramic skyline views of Paris', dot: 'bg-sky-500' },
+            { time: '01:00 PM', title: 'Traditional French Bistro Lunch', desc: 'Le Marais Quarter • Coq au vin & Fresh Baguettes', dot: 'bg-amber-500' },
+            { time: '05:30 PM', title: 'Sunset Cruise on the River Seine', desc: 'Bateaux Parisiens • Pass under Pont Alexandre III', dot: 'bg-emerald-500' },
+          ],
+        },
+        {
+          dayNumber: 2,
+          title: 'ART, CULTURE & ROYAL BOULEVARDS',
+          themeBorder: 'border-l-indigo-500',
+          activities: [
+            { time: '10:00 AM', title: 'Louvre Museum & Mona Lisa Gallery', desc: 'World famous masterworks, Glass Pyramid & Venus de Milo', dot: 'bg-indigo-500' },
+            { time: '02:00 PM', title: 'Tuileries Gardens & Coffee', desc: 'Artisan crêpes, outdoor sculptures & Grand Fountain', dot: 'bg-amber-500' },
+            { time: '04:30 PM', title: 'Arc de Triomphe & Champs-Élysées', desc: 'Rooftop vistas and luxury promenade walk', dot: 'bg-sky-500' },
+          ],
+        },
+        {
+          dayNumber: 3,
+          title: replanApplied ? 'INDOOR ART & HISTORIC ARCADES (REPLANNED 🌧️)' : 'BOHEMIAN MONTMARTRE & BASILICA',
+          themeBorder: replanApplied ? 'border-l-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10' : 'border-l-amber-500',
+          activities: replanApplied ? [
+            { time: '10:00 AM', title: 'Musée d\'Orsay (Indoor Impressionism)', desc: 'Covered Impressionist gallery • Safe from rain • Monet & Van Gogh', dot: 'bg-emerald-500' },
+            { time: '01:30 PM', title: 'Galerie Vivienne & Covered Passage Cafés', desc: '19th-century glass-roofed arcade dining & artisan hot chocolate', dot: 'bg-emerald-500' },
+            { time: '04:30 PM', title: 'Panthéon Crypt & Latin Quarter Tour', desc: 'Historic indoor monument and landmark vaults', dot: 'bg-emerald-500' },
+          ] : [
+            { time: '10:00 AM', title: 'Montmartre & Sacré-Cœur Basilica', desc: 'Cobblestone streets, artists at Place du Tertre & city viewpoints', dot: 'bg-amber-500' },
+            { time: '02:00 PM', title: 'Latin Quarter & Shakespeare and Company', desc: 'Historic bookshops, Saint-Germain-des-Prés terraces', dot: 'bg-sky-500' },
+            { time: '05:30 PM', title: 'Notre-Dame Cathedral & Île de la Cité', desc: 'Historic heart of Paris and flower market walk', dot: 'bg-emerald-500' },
+          ],
+        },
+      ];
+    }
+
+    if (isTokyo) {
+      return [
+        {
+          dayNumber: 1,
+          title: 'MODERN METROPOLIS & SACRED SHRINES',
+          themeBorder: 'border-l-sky-500',
+          activities: [
+            { time: '09:00 AM', title: 'Meiji Jingu Shrine & Yoyogi Park', desc: 'Ancient forest sanctuary and traditional Torii gate walk', dot: 'bg-sky-500' },
+            { time: '01:00 PM', title: 'Harajuku Takeshita Street Food', desc: 'Artisan crepes and Japanese matcha desserts', dot: 'bg-amber-500' },
+            { time: '05:30 PM', title: 'Shibuya Crossing & Shibuya Sky', desc: 'World’s busiest crossing and 360° sunset observation', dot: 'bg-emerald-500' },
+          ],
+        },
+        {
+          dayNumber: 2,
+          title: 'HISTORIC TEMPLE & ELECTRIC TOWN',
+          themeBorder: 'border-l-indigo-500',
+          activities: [
+            { time: '09:30 AM', title: 'Senso-ji Temple in Asakusa', desc: 'Tokyo’s oldest Buddhist temple and Nakamise-dori shopping', dot: 'bg-indigo-500' },
+            { time: '01:30 PM', title: 'Tokyo Skytree Panoramic Lunch', desc: 'Dining atop the tallest tower in Japan', dot: 'bg-amber-500' },
+            { time: '04:30 PM', title: 'Akihabara Electric Town', desc: 'Futuristic electronics, arcade culture & anime shops', dot: 'bg-sky-500' },
+          ],
+        },
+        {
+          dayNumber: 3,
+          title: replanApplied ? 'IMMERSIVE DIGITAL ART & INDOOR ONSEN (REPLANNED 🌧️)' : 'WATERFRONT & TSUKIJI TASTINGS',
+          themeBorder: replanApplied ? 'border-l-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10' : 'border-l-amber-500',
+          activities: replanApplied ? [
+            { time: '10:00 AM', title: 'TeamLab Planets Digital Museum (Indoor)', desc: 'Fully covered immersive sensory art experience', dot: 'bg-emerald-500' },
+            { time: '01:30 PM', title: 'Ginza Six Gourmet Arcade', desc: 'Premium indoor dining and wagyu beef tasting', dot: 'bg-emerald-500' },
+          ] : [
+            { time: '08:30 AM', title: 'Tsukiji Outer Market Food Tour', desc: 'Fresh sashimi, tamagoyaki, and street seafood', dot: 'bg-amber-500' },
+            { time: '02:00 PM', title: 'Odaiba Seaside Park & Rainbow Bridge', desc: 'Waterfront promenade and Gundam statue', dot: 'bg-sky-500' },
+          ],
+        },
+      ];
+    }
+
+    if (isGoa) {
+      return [
+        {
+          dayNumber: 1,
+          title: 'ARRIVAL & BEACH SUNSET',
+          themeBorder: 'border-l-sky-500',
+          activities: [
+            { time: '09:00 AM', title: 'Arrive & Hotel Check-in', desc: 'Check into Baga Beach Resort & Refresh', dot: 'bg-sky-500' },
+            { time: '01:30 PM', title: 'Goan Seafood Lunch', desc: "Britto's Shack • 4.6 ★ Rating • Authentic Goan Curry", dot: 'bg-amber-500' },
+            { time: '05:30 PM', title: 'Sunset Beach Walk & Photography', desc: 'Baga Beach • Ideal lighting and coastal breeze', dot: 'bg-emerald-500' },
+          ],
+        },
+        {
+          dayNumber: 2,
+          title: 'HERITAGE & FORTS',
+          themeBorder: 'border-l-indigo-500',
+          activities: [
+            { time: '10:00 AM', title: 'Aguada Fort Visit', desc: 'Historical 17th-century fortress and lighthouse vista', dot: 'bg-indigo-500' },
+            { time: '03:00 PM', title: 'Old Goa Churches & Cathedral', desc: 'Basilica of Bom Jesus • UNESCO World Heritage Site', dot: 'bg-sky-500' },
+          ],
+        },
+        {
+          dayNumber: 3,
+          title: replanApplied ? 'INDOOR HERITAGE & CULINARY (REPLANNED 🌧️)' : 'WATERSPORTS & COASTAL EXPLORATION',
+          themeBorder: replanApplied ? 'border-l-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10' : 'border-l-amber-500',
+          activities: replanApplied ? [
+            { time: '10:00 AM', title: 'Goa State Museum (Indoor)', desc: 'Covered Pavilion • Safe from rain • Art & artifacts', dot: 'bg-emerald-500' },
+            { time: '01:30 PM', title: 'Spice Plantation Culinary Lunch', desc: 'Traditional organic buffet and spice garden walk', dot: 'bg-emerald-500' },
+          ] : [
+            { time: '10:00 AM', title: 'Calangute Water Sports', desc: 'Jet Skiing & Parasailing on the Arabian Sea', dot: 'bg-amber-500' },
+          ],
+        },
+      ];
+    }
+
+    // Dynamic Generic Destination Itinerary
+    return [
+      {
+        dayNumber: 1,
+        title: `ARRIVAL & ${destName.toUpperCase()} HIGHLIGHTS`,
+        themeBorder: 'border-l-sky-500',
+        activities: [
+          { time: '09:30 AM', title: `Arrival & Downtown ${destName} Check-in`, desc: `Check into hotel and get oriented in central ${destName}`, dot: 'bg-sky-500' },
+          { time: '01:00 PM', title: `Traditional ${destName} Welcome Lunch`, desc: 'Sample authentic regional specialties at a top-rated local bistro', dot: 'bg-amber-500' },
+          { time: '05:00 PM', title: 'City Center Plaza & Scenic Sunset', desc: `Explore landmark plazas and evening viewpoints across ${destName}`, dot: 'bg-emerald-500' },
+        ],
+      },
+      {
+        dayNumber: 2,
+        title: `HISTORIC LANDMARKS & CULTURE OF ${destName.toUpperCase()}`,
+        themeBorder: 'border-l-indigo-500',
+        activities: [
+          { time: '10:00 AM', title: `Grand Museum & Heritage Walk`, desc: `Discover the top historical exhibits and architectural monuments in ${destName}`, dot: 'bg-indigo-500' },
+          { time: '02:30 PM', title: 'Artisan Market & Local Crafts', desc: 'Browse famous shopping avenues and handmade souvenirs', dot: 'bg-sky-500' },
+        ],
+      },
+      {
+        dayNumber: 3,
+        title: replanApplied ? 'INDOOR GALLERIES & CULINARY TASTING (REPLANNED 🌧️)' : 'SCENIC NATURE & PANORAMIC ADVENTURE',
+        themeBorder: replanApplied ? 'border-l-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10' : 'border-l-amber-500',
+        activities: replanApplied ? [
+          { time: '10:00 AM', title: `National Art Gallery of ${destName} (Indoor)`, desc: 'Protected indoor landmark tour safe from rain', dot: 'bg-emerald-500' },
+          { time: '01:30 PM', title: 'Covered Gourmet Market Lunch', desc: 'Indoors gastronomy tasting and warm beverages', dot: 'bg-emerald-500' },
+        ] : [
+          { time: '10:00 AM', title: `Panoramic Viewpoint & Outdoor Stroll`, desc: `Top scenic viewpoint and botanical gardens in ${destName}`, dot: 'bg-amber-500' },
+          { time: '03:00 PM', title: 'Cultural Evening & Farewell Dinner', desc: 'Celebratory multi-course dinner with local live music', dot: 'bg-emerald-500' },
+        ],
+      },
+    ];
+  }, [trip?.destination, replanApplied]);
+
+  // Destination-specific Waypoints for Map
+  const mapWaypoints = useMemo(() => {
+    const dest = (trip?.destination || 'Paris').toLowerCase();
+    if (dest.includes('paris') || dest.includes('france')) {
+      return [
+        { name: '1. Eiffel Tower & Trocadéro', rating: '4.8 ★' },
+        { name: '2. Louvre Museum & Pyramide', rating: '4.7 ★' },
+        { name: '3. Arc de Triomphe & Champs-Élysées', rating: '4.7 ★' },
+        { name: '4. Sacré-Cœur & Montmartre', rating: '4.6 ★' },
+      ];
+    }
+    if (dest.includes('tokyo') || dest.includes('japan')) {
+      return [
+        { name: '1. Shibuya Crossing & Hachiko', rating: '4.8 ★' },
+        { name: '2. Senso-ji Temple Asakusa', rating: '4.7 ★' },
+        { name: '3. Meiji Shrine Forest', rating: '4.6 ★' },
+        { name: '4. Tokyo Skytree Observation', rating: '4.7 ★' },
+      ];
+    }
+    if (dest.includes('goa')) {
+      return [
+        { name: '1. Baga Beach Promenade', rating: '4.6 ★' },
+        { name: '2. Aguada Fort & Lighthouse', rating: '4.5 ★' },
+        { name: '3. Basilica of Bom Jesus', rating: '4.7 ★' },
+      ];
+    }
+    return [
+      { name: `1. Central ${trip?.destination || 'City'} Historic District`, rating: '4.7 ★' },
+      { name: `2. ${trip?.destination || 'City'} Grand Museum & Art Center`, rating: '4.6 ★' },
+      { name: `3. ${trip?.destination || 'City'} Botanical Promenade`, rating: '4.8 ★' },
+    ];
+  }, [trip?.destination]);
+
+  // Destination-specific Hotels
+  const destinationHotels = useMemo(() => {
+    const dest = (trip?.destination || 'Paris').toLowerCase();
+    if (dest.includes('paris') || dest.includes('france')) {
+      return [
+        { id: 'ht_1', name: 'Pullman Paris Tour Eiffel', address: '18 Avenue de Suffren, 15th arr., Paris', rating: 4.8 },
+        { id: 'ht_2', name: 'Hotel Eiffel Seine', address: '3 Boulevard de Grenelle, Paris', rating: 4.6 },
+        { id: 'ht_3', name: 'CitizenM Paris Gare de Lyon', address: '7 Rue de Vanves, Paris', rating: 4.7 },
+      ];
+    }
+    if (dest.includes('tokyo') || dest.includes('japan')) {
+      return [
+        { id: 'ht_1', name: 'Shibuya Stream Excel Hotel Tokyu', address: 'Shibuya, Tokyo', rating: 4.8 },
+        { id: 'ht_2', name: 'Hotel Gracery Shinjuku', address: 'Kabukicho, Shinjuku, Tokyo', rating: 4.7 },
+        { id: 'ht_3', name: 'Asakusa View Hotel', address: 'Nishiasakusa, Taito City, Tokyo', rating: 4.6 },
+      ];
+    }
+    if (dest.includes('goa')) {
+      return [
+        { id: 'ht_1', name: 'Baga Beach Resort & Spa', address: 'Baga Beach Road, Goa', rating: 4.7 },
+        { id: 'ht_2', name: 'Heritage Portuguese Villa Hotel', address: 'Fontainhas, Panaji, Goa', rating: 4.6 },
+        { id: 'ht_3', name: 'Taj Fort Aguada Resort', address: 'Sinquerim Beach, Goa', rating: 4.9 },
+      ];
+    }
+    return [
+      { id: 'ht_1', name: `Grand ${trip?.destination || 'City'} Boutique Hotel`, address: `Central Avenue, ${trip?.destination || 'City'}`, rating: 4.7 },
+      { id: 'ht_2', name: `The Ritz ${trip?.destination || 'City'} Suites`, address: `Plaza Square, ${trip?.destination || 'City'}`, rating: 4.8 },
+      { id: 'ht_3', name: `${trip?.destination || 'City'} Luxury View Resort`, address: `Riverfront Road, ${trip?.destination || 'City'}`, rating: 4.6 },
+    ];
+  }, [trip?.destination]);
+
+  // Packing Checklist
+  const [packingItems, setPackingItems] = useState([
+    { id: 1, category: 'Documents', name: 'Passport / Government ID', packed: true },
+    { id: 2, category: 'Documents', name: 'Flight Boarding Pass & Hotel Vouchers', packed: true },
+    { id: 3, category: 'Clothing', name: 'City Walking Comfortable Shoes', packed: false },
+    { id: 4, category: 'Clothing', name: 'Light Casual Wear & Jacket', packed: true },
+    { id: 5, category: 'Weather', name: 'Compact Umbrella / Rain Jacket', packed: false },
+    { id: 6, category: 'Electronics', name: 'Universal Travel Power Adapter', packed: true },
+    { id: 7, category: 'Electronics', name: 'Power Bank & Charging Cables', packed: true },
+    { id: 8, category: 'Photography', name: 'Camera & Memory Card', packed: false },
+  ]);
 
   const togglePackingItem = (id: number) => {
     setPackingItems((prev) =>
@@ -139,7 +359,7 @@ export const TripDetailsPage: React.FC = () => {
           ...prev,
           {
             sender: 'AI',
-            text: 'I have adjusted Day 3 to replace high-intensity outdoor activities with a relaxed spice plantation lunch & café visit. Click Replan Trip to apply.',
+            text: `I have adjusted Day 3 in ${trip?.destination || 'your destination'} to replace high-intensity outdoor activities with relaxed indoor museum visits & cozy café dining. Click Adaptive Replan to apply.`,
           },
         ]);
       } else {
@@ -147,7 +367,7 @@ export const TripDetailsPage: React.FC = () => {
           ...prev,
           {
             sender: 'AI',
-            text: `Analyzing "${userText}" against your travel preferences and budget cap of ${trip?.currency} ${trip?.budget}. Your itinerary remains optimal!`,
+            text: `Analyzing "${userText}" for ${trip?.destination || 'your destination'} against your budget cap of ${trip?.currency} ${trip?.budget}. Your itinerary remains optimal!`,
           },
         ]);
       }
@@ -209,7 +429,7 @@ export const TripDetailsPage: React.FC = () => {
                   <Badge variant="sky">{trip.status}</Badge>
                 </div>
                 <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 dark:text-slate-300">
-                  <span className="flex items-center">
+                  <span className="flex items-center capitalize">
                     <MapPin className="h-4 w-4 text-sky-600 dark:text-sky-400 mr-1" /> {trip.destination}
                   </span>
                   <span className="flex items-center">
@@ -269,7 +489,7 @@ export const TripDetailsPage: React.FC = () => {
                   Trip Health Score
                 </h3>
                 <div className="w-28 h-28 rounded-full border-4 border-emerald-500 flex flex-col items-center justify-center mx-auto bg-emerald-50/50 dark:bg-emerald-500/10">
-                  <span className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">91</span>
+                  <span className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">92</span>
                   <span className="text-[10px] text-slate-400 font-semibold uppercase">out of 100</span>
                 </div>
                 <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300 text-left pt-2 border-t border-slate-100 dark:border-slate-800">
@@ -279,15 +499,15 @@ export const TripDetailsPage: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span>Preferences Match</span>
-                    <strong className="text-slate-900 dark:text-white">92/100</strong>
+                    <strong className="text-slate-900 dark:text-white">93/100</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Travel Efficiency</span>
-                    <strong className="text-slate-900 dark:text-white">88/100</strong>
+                    <strong className="text-slate-900 dark:text-white">89/100</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Weather Alignment</span>
-                    <strong className="text-slate-900 dark:text-white">90/100</strong>
+                    <strong className="text-slate-900 dark:text-white">91/100</strong>
                   </div>
                 </div>
               </Card>
@@ -300,7 +520,7 @@ export const TripDetailsPage: React.FC = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
                   <div>
                     <span className="text-[10px] uppercase text-slate-400 font-semibold block">Destination</span>
-                    <strong className="text-slate-900 dark:text-white">{trip.destination}</strong>
+                    <strong className="text-slate-900 dark:text-white capitalize">{trip.destination}</strong>
                   </div>
                   <div>
                     <span className="text-[10px] uppercase text-slate-400 font-semibold block">Origin</span>
@@ -320,7 +540,7 @@ export const TripDetailsPage: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-[10px] uppercase text-slate-400 font-semibold block">Total Budget</span>
-                    <strong className="text-slate-900 dark:text-white">{trip.currency} {trip.budget}</strong>
+                    <strong className="text-slate-900 dark:text-white">{trip.currency} {trip.budget.toLocaleString()}</strong>
                   </div>
                 </div>
 
@@ -329,7 +549,7 @@ export const TripDetailsPage: React.FC = () => {
                   <div className="flex flex-wrap gap-1.5">
                     {trip.preferences?.interests?.map((interest) => (
                       <Badge key={interest} variant="sky">{interest}</Badge>
-                    )) || <Badge variant="slate">General Sightseeing</Badge>}
+                    )) || <Badge variant="slate">Sightseeing & Culture</Badge>}
                   </div>
                 </div>
               </Card>
@@ -340,88 +560,32 @@ export const TripDetailsPage: React.FC = () => {
           {activeTab === 'Itinerary' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Day-by-Day Timeline</h3>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white capitalize">
+                  {trip.destination} Day-by-Day Timeline
+                </h3>
                 {replanApplied && (
                   <Badge variant="emerald">✓ Day 3 Weather Adapted</Badge>
                 )}
               </div>
 
-              {/* Day 1 Timeline */}
-              <Card className="p-6 space-y-4 border-l-4 border-l-sky-500">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">DAY 1 — ARRIVAL & BEACH SUNSET</h4>
-                  <span className="text-xs text-slate-400 font-medium">Estimated: ₹4,500</span>
-                </div>
-                <div className="space-y-3 relative pl-4 border-l border-slate-200 dark:border-slate-800 ml-2 text-xs">
-                  <div className="relative">
-                    <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-sky-500" />
-                    <strong className="text-slate-900 dark:text-white">09:00 AM — Arrive & Hotel Check-in</strong>
-                    <p className="text-slate-500">Check into Baga Beach Resort & Refresh</p>
+              {itineraryDays.map((day) => (
+                <Card key={day.dayNumber} className={`p-6 space-y-4 border-l-4 ${day.themeBorder}`}>
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                      DAY {day.dayNumber} — {day.title}
+                    </h4>
                   </div>
-                  <div className="relative">
-                    <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-amber-500" />
-                    <strong className="text-slate-900 dark:text-white">01:30 PM — Goan Seafood Lunch</strong>
-                    <p className="text-slate-500">Britto's Shack • 4.6 ★ Rating • ₹1,200</p>
-                  </div>
-                  <div className="relative">
-                    <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                    <strong className="text-slate-900 dark:text-white">05:30 PM — Sunset Beach Walk & Photography</strong>
-                    <p className="text-slate-500">Baga Beach • Ideal Lighting for Photos</p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Day 2 Timeline */}
-              <Card className="p-6 space-y-4 border-l-4 border-l-indigo-500">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">DAY 2 — HERITAGE & FORTS</h4>
-                  <span className="text-xs text-slate-400 font-medium">Estimated: ₹3,200</span>
-                </div>
-                <div className="space-y-3 relative pl-4 border-l border-slate-200 dark:border-slate-800 ml-2 text-xs">
-                  <div className="relative">
-                    <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-indigo-500" />
-                    <strong className="text-slate-900 dark:text-white">10:00 AM — Aguada Fort Visit</strong>
-                    <p className="text-slate-500">Historical Fortress • 4.5 ★ Rating • 45 min transit</p>
-                  </div>
-                  <div className="relative">
-                    <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-sky-500" />
-                    <strong className="text-slate-900 dark:text-white">03:00 PM — Old Goa Churches & Cathedral</strong>
-                    <p className="text-slate-500">UNESCO World Heritage Site • Free Entry</p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Day 3 Timeline (Adaptive) */}
-              <Card className={`p-6 space-y-4 border-l-4 ${replanApplied ? 'border-l-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10' : 'border-l-amber-500'}`}>
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                    DAY 3 — {replanApplied ? 'INDOOR HERITAGE & CULINARY (REPLANNED)' : 'WATERSPOARTS & COASTAL EXPLORATION'}
-                  </h4>
-                  <span className="text-xs text-slate-400 font-medium">{replanApplied ? 'Estimated: ₹1,050' : 'Estimated: ₹1,500'}</span>
-                </div>
-                {replanApplied ? (
-                  <div className="space-y-3 relative pl-4 border-l border-emerald-300 dark:border-emerald-800 ml-2 text-xs">
-                    <div className="relative">
-                      <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                      <strong className="text-slate-900 dark:text-white">10:00 AM — Goa State Museum (Indoor)</strong>
-                      <p className="text-slate-500">Covered Pavilion • Safe from Rain • ₹300</p>
-                    </div>
-                    <div className="relative">
-                      <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                      <strong className="text-slate-900 dark:text-white">01:30 PM — Spice Plantation Culinary Lunch</strong>
-                      <p className="text-slate-500">Traditional Organic Feast • ₹750</p>
-                    </div>
-                  </div>
-                ) : (
                   <div className="space-y-3 relative pl-4 border-l border-slate-200 dark:border-slate-800 ml-2 text-xs">
-                    <div className="relative">
-                      <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-amber-500" />
-                      <strong className="text-slate-900 dark:text-white">10:00 AM — Calangute Water Sports</strong>
-                      <p className="text-slate-500">Outdoor Jet Skiing & Parasailing • ₹1,500</p>
-                    </div>
+                    {day.activities.map((act, aIdx) => (
+                      <div key={aIdx} className="relative">
+                        <span className={`absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full ${act.dot}`} />
+                        <strong className="text-slate-900 dark:text-white">{act.time} — {act.title}</strong>
+                        <p className="text-slate-500 dark:text-slate-400">{act.desc}</p>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </Card>
+                </Card>
+              ))}
             </div>
           )}
 
@@ -430,14 +594,14 @@ export const TripDetailsPage: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <Card className="lg:col-span-8 p-6 space-y-4">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center justify-between">
-                  <span>Interactive Map Overview</span>
+                  <span className="capitalize">{trip.destination} Interactive Map Overview</span>
                   <Badge variant="sky">Google Maps Integration</Badge>
                 </h3>
                 <div className="bg-slate-200 dark:bg-slate-800 rounded-xl h-72 flex items-center justify-center text-center p-6 text-xs text-slate-500 dark:text-slate-400">
                   <div>
                     <MapPin className="h-8 w-8 text-sky-500 mx-auto mb-2" />
-                    <p className="font-bold text-slate-700 dark:text-slate-200">{trip.destination} Interactive Map Workspace</p>
-                    <p className="text-[10px]">Showing markers for key points of interest in {trip.destination}.</p>
+                    <p className="font-bold text-slate-700 dark:text-slate-200 capitalize">{trip.destination} Interactive Map Workspace</p>
+                    <p className="text-[10px]">Showing markers for key points of interest and attractions in {trip.destination}.</p>
                   </div>
                 </div>
               </Card>
@@ -445,18 +609,12 @@ export const TripDetailsPage: React.FC = () => {
               <Card className="lg:col-span-4 p-6 space-y-4">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">Waypoints & Route Details</h3>
                 <div className="space-y-2 text-xs">
-                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex justify-between">
-                    <span>1. Baga Beach</span>
-                    <span className="font-semibold text-sky-500">4.6 ★</span>
-                  </div>
-                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex justify-between">
-                    <span>2. Aguada Fort</span>
-                    <span className="font-semibold text-sky-500">4.5 ★</span>
-                  </div>
-                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex justify-between">
-                    <span>3. Goa State Museum</span>
-                    <span className="font-semibold text-sky-500">4.4 ★</span>
-                  </div>
+                  {mapWaypoints.map((wp, idx) => (
+                    <div key={idx} className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex justify-between">
+                      <span>{wp.name}</span>
+                      <span className="font-semibold text-sky-500">{wp.rating}</span>
+                    </div>
+                  ))}
                 </div>
               </Card>
             </div>
@@ -472,9 +630,9 @@ export const TripDetailsPage: React.FC = () => {
                     <AlertTriangle className="h-5 w-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-amber-900 dark:text-amber-300">Live Weather ({trip.destination})</h4>
+                    <h4 className="text-xs font-bold text-amber-900 dark:text-amber-300 capitalize">Live Weather ({trip.destination})</h4>
                     <p className="text-xs text-amber-700 dark:text-amber-400">
-                      {liveWeather?.alertDescription || `Current temperature is ${liveWeather?.currentTemperature || 29}°C (${liveWeather?.currentCondition || 'Sunny'}). Rain expected on Day 3.`}
+                      {liveWeather?.alertDescription || `Current temperature is ${liveWeather?.currentTemperature || 24}°C (${liveWeather?.currentCondition || 'Partly Cloudy'}). Heavy rain expected on Day 3.`}
                     </p>
                   </div>
                 </div>
@@ -486,11 +644,11 @@ export const TripDetailsPage: React.FC = () => {
               {/* 5-Day Forecast Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {(liveWeather?.forecast || [
-                  { date: 'Day 1', temperature: 29, condition: 'Sunny', rainProbability: 0.1, outdoorSuitable: true },
-                  { date: 'Day 2', temperature: 30, condition: 'Partly Cloudy', rainProbability: 0.1, outdoorSuitable: true },
-                  { date: 'Day 3', temperature: 26, condition: 'Heavy Rain', rainProbability: 0.85, outdoorSuitable: false },
-                  { date: 'Day 4', temperature: 28, condition: 'Clear Spells', rainProbability: 0.1, outdoorSuitable: true },
-                  { date: 'Day 5', temperature: 30, condition: 'Sunny', rainProbability: 0.1, outdoorSuitable: true },
+                  { date: 'Day 1', temperature: 24, condition: 'Sunny', rainProbability: 0.1, outdoorSuitable: true },
+                  { date: 'Day 2', temperature: 25, condition: 'Partly Cloudy', rainProbability: 0.1, outdoorSuitable: true },
+                  { date: 'Day 3', temperature: 21, condition: 'Heavy Rain', rainProbability: 0.85, outdoorSuitable: false },
+                  { date: 'Day 4', temperature: 23, condition: 'Clear Spells', rainProbability: 0.1, outdoorSuitable: true },
+                  { date: 'Day 5', temperature: 24, condition: 'Sunny', rainProbability: 0.1, outdoorSuitable: true },
                 ]).slice(0, 5).map((f: any, idx: number) => (
                   <Card key={idx} className={`p-4 text-center space-y-2 ${!f.outdoorSuitable ? 'border-amber-300 dark:border-amber-500/40' : ''}`}>
                     <span className="text-[10px] text-slate-400 uppercase font-bold">{f.date}</span>
@@ -515,8 +673,8 @@ export const TripDetailsPage: React.FC = () => {
           {activeTab === 'Flights' && (
             <div className="space-y-4 max-w-2xl mx-auto">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Live Flights ({trip.origin || 'HYD'} → {trip.destination || 'GOI'})
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white capitalize">
+                  Live Flights ({trip.origin || 'HYD'} → {trip.destination || 'PAR'})
                 </h3>
                 <Badge variant="sky">Aviationstack Live</Badge>
               </div>
@@ -526,9 +684,9 @@ export const TripDetailsPage: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {(liveFlights && liveFlights.length > 0 ? liveFlights : [
-                    { id: 'fl_1', airlineName: 'IndiGo', flightNumber: '6E-512', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '06:20 AM', arrivalTime: '08:05 AM', duration: '1h 45m', status: 'Scheduled' },
-                    { id: 'fl_2', airlineName: 'Air India', flightNumber: 'AI-804', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '11:30 AM', arrivalTime: '01:25 PM', duration: '1h 55m', status: 'Scheduled' },
-                    { id: 'fl_3', airlineName: 'Akasa Air', flightNumber: 'QP-1302', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '04:45 PM', arrivalTime: '06:35 PM', duration: '1h 50m', status: 'Scheduled' },
+                    { id: 'fl_1', airlineName: 'Air France', flightNumber: 'AF-225', origin: trip.origin || 'HYD', destination: trip.destination || 'CDG', departureTime: '02:15 AM', arrivalTime: '08:40 AM', duration: '9h 55m', status: 'Scheduled' },
+                    { id: 'fl_2', airlineName: 'Emirates', flightNumber: 'EK-527', origin: trip.origin || 'HYD', destination: trip.destination || 'CDG', departureTime: '10:00 AM', arrivalTime: '07:30 PM', duration: '12h 00m', status: 'Scheduled' },
+                    { id: 'fl_3', airlineName: 'Lufthansa', flightNumber: 'LH-753', origin: trip.origin || 'HYD', destination: trip.destination || 'CDG', departureTime: '03:30 AM', arrivalTime: '11:15 AM', duration: '10h 15m', status: 'Scheduled' },
                   ]).map((flight: any) => (
                     <Card key={flight.id} className="p-5 space-y-2">
                       <div className="flex items-center justify-between">
@@ -544,7 +702,7 @@ export const TripDetailsPage: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Badge variant="emerald">Non-stop</Badge>
+                          <Badge variant="emerald">Direct</Badge>
                           <Badge variant="sky">Scheduled</Badge>
                         </div>
                       </div>
@@ -559,7 +717,7 @@ export const TripDetailsPage: React.FC = () => {
           {activeTab === 'Hotels' && (
             <div className="space-y-4 max-w-2xl mx-auto">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white capitalize">
                   Accommodations in {trip.destination}
                 </h3>
                 <Badge variant="sky">Verified Hotels</Badge>
@@ -569,11 +727,7 @@ export const TripDetailsPage: React.FC = () => {
                 <div className="py-8 text-center text-xs text-slate-400">Searching hotels...</div>
               ) : (
                 <div className="space-y-3">
-                  {(liveHotels && liveHotels.length > 0 ? liveHotels : [
-                    { id: 'ht_1', name: 'Baga Beach Resort & Spa', address: 'Baga Beach Road, Goa', rating: 4.7, pricePerNight: 2400 },
-                    { id: 'ht_2', name: 'Heritage Portuguese Villa Hotel', address: 'Fontainhas, Panaji, Goa', rating: 4.6, pricePerNight: 1850 },
-                    { id: 'ht_3', name: 'Taj Fort Aguada Resort', address: 'Sinquerim Beach, Goa', rating: 4.9, pricePerNight: 5500 },
-                  ]).map((hotel: any) => (
+                  {(liveHotels && liveHotels.length > 0 ? liveHotels : destinationHotels).map((hotel: any) => (
                     <Card key={hotel.id} className="p-5 space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
@@ -585,9 +739,7 @@ export const TripDetailsPage: React.FC = () => {
                             <p className="text-[10px] text-slate-400">{hotel.address} • {hotel.rating} ★</p>
                           </div>
                         </div>
-                        <strong className="text-sm font-extrabold text-slate-900 dark:text-white">
-                          ₹{hotel.pricePerNight?.toLocaleString()} / night
-                        </strong>
+                        <Badge variant="slate">Available</Badge>
                       </div>
                     </Card>
                   ))}
@@ -603,35 +755,35 @@ export const TripDetailsPage: React.FC = () => {
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white">Budget Tracking Overview</h3>
                   <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                    ₹2,550 Remaining
+                    {trip.currency} {(trip.budget * 0.08).toLocaleString()} Remaining
                   </span>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs font-medium text-slate-600 dark:text-slate-300">
-                    <span>Allocated: ₹27,450</span>
-                    <span>Total Budget: ₹30,000</span>
+                    <span>Allocated: {trip.currency} {(trip.budget * 0.92).toLocaleString()}</span>
+                    <span>Total Budget: {trip.currency} {trip.budget.toLocaleString()}</span>
                   </div>
                   <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-3 overflow-hidden">
-                    <div className="bg-sky-600 dark:bg-sky-500 h-full rounded-full w-[91.5%]" />
+                    <div className="bg-sky-600 dark:bg-sky-500 h-full rounded-full w-[92%]" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-4">
                   <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
                     <span className="text-[10px] text-slate-400 font-semibold block">Flights</span>
-                    <strong className="text-slate-900 dark:text-white">₹8,000</strong>
+                    <strong className="text-slate-900 dark:text-white">{trip.currency} {(trip.budget * 0.35).toLocaleString()}</strong>
                   </div>
                   <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
                     <span className="text-[10px] text-slate-400 font-semibold block">Hotels</span>
-                    <strong className="text-slate-900 dark:text-white">₹9,500</strong>
+                    <strong className="text-slate-900 dark:text-white">{trip.currency} {(trip.budget * 0.30).toLocaleString()}</strong>
                   </div>
                   <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
                     <span className="text-[10px] text-slate-400 font-semibold block">Food & Dining</span>
-                    <strong className="text-slate-900 dark:text-white">₹4,000</strong>
+                    <strong className="text-slate-900 dark:text-white">{trip.currency} {(trip.budget * 0.15).toLocaleString()}</strong>
                   </div>
                   <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
                     <span className="text-[10px] text-slate-400 font-semibold block">Activities</span>
-                    <strong className="text-slate-900 dark:text-white">₹5,950</strong>
+                    <strong className="text-slate-900 dark:text-white">{trip.currency} {(trip.budget * 0.12).toLocaleString()}</strong>
                   </div>
                 </div>
               </Card>
@@ -644,7 +796,7 @@ export const TripDetailsPage: React.FC = () => {
               <Card className="p-6 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Smart Packing Checklist</h3>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white capitalize">Smart Packing Checklist for {trip.destination}</h3>
                     <p className="text-[10px] text-slate-400">{packedCount} of {packingItems.length} items packed</p>
                   </div>
                   <span className="text-xs font-bold text-sky-600 dark:text-sky-400">{packedPercent}% Ready</span>
@@ -683,8 +835,8 @@ export const TripDetailsPage: React.FC = () => {
               <Card className="p-6 flex flex-col h-[400px]">
                 <div className="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
                   <Bot className="h-5 w-5 text-sky-500" />
-                  <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                    TripWise AI Companion
+                  <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider capitalize">
+                    {trip.destination} AI Companion
                   </h3>
                 </div>
 
@@ -710,7 +862,7 @@ export const TripDetailsPage: React.FC = () => {
                 <form onSubmit={handleSendChat} className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center space-x-2">
                   <input
                     type="text"
-                    placeholder="Ask about your trip (e.g. 'Make Day 3 more relaxed')..."
+                    placeholder={`Ask about ${trip.destination} (e.g. 'Make Day 3 more relaxed')...`}
                     value={aiChatInput}
                     onChange={(e) => setAiChatInput(e.target.value)}
                     className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
@@ -733,8 +885,8 @@ export const TripDetailsPage: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center space-x-2">
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Weather Alert & Adaptive Replan
+                <h3 className="text-base font-bold text-slate-900 dark:text-white capitalize">
+                  Weather Alert & Adaptive Replan ({trip.destination})
                 </h3>
               </div>
               <button
@@ -745,21 +897,21 @@ export const TripDetailsPage: React.FC = () => {
               </button>
             </div>
 
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              OpenWeather forecast predicts heavy rain on Saturday afternoon. AI has structured an indoor alternative timeline for Day 3.
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed capitalize">
+              OpenWeather forecast predicts heavy rain on Saturday afternoon in {trip.destination}. AI has structured an indoor alternative timeline for Day 3.
             </p>
 
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Current Plan (Rain Risk)</span>
-                <p className="text-slate-700 dark:text-slate-300">🏄 Baga Water Sports (Outdoor)</p>
-                <p className="text-slate-700 dark:text-slate-300">🏖️ Calangute Beach Walk</p>
+                <p className="text-slate-700 dark:text-slate-300">⛰️ Outdoor Hill / River Walk</p>
+                <p className="text-slate-700 dark:text-slate-300">🏛️ Open Plaza Sightseeing</p>
               </div>
 
               <div className="p-3 bg-sky-50 dark:bg-sky-950/40 rounded-xl border border-sky-300 dark:border-sky-800 space-y-2">
                 <span className="text-[10px] text-sky-600 dark:text-sky-400 font-bold uppercase block">Proposed Alternate</span>
-                <p className="text-slate-900 dark:text-white font-medium">🏛️ Goa State Museum (Indoor)</p>
-                <p className="text-slate-900 dark:text-white font-medium">🍜 Spice Plantation Lunch</p>
+                <p className="text-slate-900 dark:text-white font-medium">🏛️ National Art Museum (Indoor)</p>
+                <p className="text-slate-900 dark:text-white font-medium">🍜 Covered Arcade Culinary Lunch</p>
               </div>
             </div>
 
@@ -770,11 +922,11 @@ export const TripDetailsPage: React.FC = () => {
               </div>
               <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
                 <span className="text-[10px] text-slate-400 block">Travel Time</span>
-                <strong className="text-sky-600 dark:text-sky-400">-31 min</strong>
+                <strong className="text-sky-600 dark:text-sky-400">-25 min</strong>
               </div>
               <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
                 <span className="text-[10px] text-slate-400 block">Preference</span>
-                <strong className="text-amber-600 dark:text-amber-400">+6%</strong>
+                <strong className="text-amber-600 dark:text-amber-400">+8%</strong>
               </div>
               <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
                 <span className="text-[10px] text-slate-400 block">Safety</span>
