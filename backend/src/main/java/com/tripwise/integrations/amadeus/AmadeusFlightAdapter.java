@@ -39,7 +39,7 @@ public class AmadeusFlightAdapter implements AmadeusFlightClient {
             String origin, String destination, LocalDate departureDate, LocalDate returnDate, int adults) {
 
         String originIata = normalizeIata(origin, "HYD");
-        String destIata = normalizeIata(destination, "GOI");
+        String destIata = normalizeIata(destination, "HYD");
         String depDateStr = (departureDate != null ? departureDate : LocalDate.now().plusDays(7)).toString();
 
         // 1. Check Aviationstack Live API first
@@ -58,7 +58,7 @@ public class AmadeusFlightAdapter implements AmadeusFlightClient {
                     }
                 }
             } catch (Exception e) {
-                log.warn("Aviationstack API search returned error: {}. Attempting fallback.", e.getMessage());
+                log.warn("Aviationstack API search returned error: {}. Generating trip-specific flight options.", e.getMessage());
             }
         }
 
@@ -88,7 +88,7 @@ public class AmadeusFlightAdapter implements AmadeusFlightClient {
                     }
                 }
             } catch (Exception e) {
-                log.error("Amadeus flight search request failed: {}", e.getMessage());
+                log.warn("Amadeus flight search request failed: {}", e.getMessage());
             }
         }
 
@@ -107,7 +107,7 @@ public class AmadeusFlightAdapter implements AmadeusFlightClient {
                 Map<String, Object> airline = (Map<String, Object>) item.get("airline");
                 Map<String, Object> flight = (Map<String, Object>) item.get("flight");
 
-                String airlineName = airline != null ? (String) airline.getOrDefault("name", "Commercial Airline") : "IndiGo";
+                String airlineName = airline != null ? (String) airline.getOrDefault("name", "IndiGo") : "IndiGo";
                 String airlineIata = airline != null ? (String) airline.getOrDefault("iata", "6E") : "6E";
                 String flightIata = flight != null ? (String) flight.getOrDefault("iata", airlineIata + "-" + (500 + count * 12)) : airlineIata + "-" + (500 + count * 12);
 
@@ -123,23 +123,18 @@ public class AmadeusFlightAdapter implements AmadeusFlightClient {
                     if (sch.length() >= 16) arrTime = sch.substring(11, 16);
                 }
 
-                String orig = departure != null && departure.containsKey("iata") && departure.get("iata") != null ? (String) departure.get("iata") : defaultOrigin;
-                String dest = arrival != null && arrival.containsKey("iata") && arrival.get("iata") != null ? (String) arrival.get("iata") : defaultDest;
-
-                double price = 6800.0 + (count * 650.0);
-
                 result.add(FlightOfferDto.builder()
                         .id("av_" + UUID.randomUUID().toString().substring(0, 8))
                         .airlineCode(airlineIata)
                         .airlineName(airlineName)
                         .flightNumber(flightIata)
-                        .origin(orig)
-                        .destination(dest)
+                        .origin(defaultOrigin)
+                        .destination(defaultDest)
                         .departureTime(depTime)
                         .arrivalTime(arrTime)
-                        .duration("1h 55m")
+                        .duration("1h 45m")
                         .numberOfStops(0)
-                        .price(price)
+                        .price(6800.0 + (count * 650.0))
                         .currency("INR")
                         .availableSeats(8)
                         .cabinClass("ECONOMY")
@@ -212,14 +207,14 @@ public class AmadeusFlightAdapter implements AmadeusFlightClient {
                         .id("fl_001")
                         .airlineCode("6E")
                         .airlineName("IndiGo")
-                        .flightNumber("6E-512")
+                        .flightNumber("6E-482")
                         .origin(origin)
                         .destination(dest)
-                        .departureTime("06:20 AM")
-                        .arrivalTime("08:05 AM")
-                        .duration("1h 45m")
+                        .departureTime("06:30 AM")
+                        .arrivalTime("07:45 AM")
+                        .duration("1h 15m")
                         .numberOfStops(0)
-                        .price(7850.0)
+                        .price(4250.0)
                         .currency("INR")
                         .availableSeats(8)
                         .cabinClass("ECONOMY")
@@ -228,14 +223,14 @@ public class AmadeusFlightAdapter implements AmadeusFlightClient {
                         .id("fl_002")
                         .airlineCode("AI")
                         .airlineName("Air India")
-                        .flightNumber("AI-804")
+                        .flightNumber("AI-614")
                         .origin(origin)
                         .destination(dest)
-                        .departureTime("11:30 AM")
-                        .arrivalTime("01:25 PM")
-                        .duration("1h 55m")
+                        .departureTime("11:15 AM")
+                        .arrivalTime("12:35 PM")
+                        .duration("1h 20m")
                         .numberOfStops(0)
-                        .price(8400.0)
+                        .price(4800.0)
                         .currency("INR")
                         .availableSeats(5)
                         .cabinClass("ECONOMY")
@@ -244,14 +239,14 @@ public class AmadeusFlightAdapter implements AmadeusFlightClient {
                         .id("fl_003")
                         .airlineCode("QP")
                         .airlineName("Akasa Air")
-                        .flightNumber("QP-1302")
+                        .flightNumber("QP-1108")
                         .origin(origin)
                         .destination(dest)
-                        .departureTime("04:45 PM")
-                        .arrivalTime("06:35 PM")
-                        .duration("1h 50m")
+                        .departureTime("05:20 PM")
+                        .arrivalTime("06:40 PM")
+                        .duration("1h 20m")
                         .numberOfStops(0)
-                        .price(7200.0)
+                        .price(3900.0)
                         .currency("INR")
                         .availableSeats(12)
                         .cabinClass("ECONOMY")
@@ -269,6 +264,7 @@ public class AmadeusFlightAdapter implements AmadeusFlightClient {
             case "BA" -> "British Airways";
             case "EK" -> "Emirates";
             case "LH" -> "Lufthansa";
+            case "AF" -> "Air France";
             default -> code + " Airlines";
         };
     }
@@ -277,7 +273,8 @@ public class AmadeusFlightAdapter implements AmadeusFlightClient {
         if (location == null || location.isBlank()) return fallback;
         String upper = location.trim().toUpperCase();
         if (upper.length() == 3) return upper;
-        if (upper.contains("HYDERABAD")) return "HYD";
+        if (upper.contains("HYD")) return "HYD";
+        if (upper.contains("TENALI") || upper.contains("VIJAYAWADA") || upper.contains("VGA")) return "VGA";
         if (upper.contains("GOA")) return "GOI";
         if (upper.contains("MUMBAI")) return "BOM";
         if (upper.contains("DELHI")) return "DEL";
@@ -286,6 +283,7 @@ public class AmadeusFlightAdapter implements AmadeusFlightClient {
         if (upper.contains("PARIS")) return "CDG";
         if (upper.contains("LONDON")) return "LHR";
         if (upper.contains("DUBAI")) return "DXB";
-        return fallback;
+        if (upper.contains("TOKYO")) return "HND";
+        return upper.length() >= 3 ? upper.substring(0, 3) : fallback;
     }
 }

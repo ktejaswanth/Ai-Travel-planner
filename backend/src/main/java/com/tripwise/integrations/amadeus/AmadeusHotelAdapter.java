@@ -35,7 +35,7 @@ public class AmadeusHotelAdapter implements AmadeusHotelClient {
     @Override
     public List<HotelOfferDto> searchHotelOffers(String cityCode, LocalDate checkInDate, LocalDate checkOutDate, int guests) {
         String token = amadeusAuthService.getAccessToken();
-        String city = normalizeCity(cityCode, "GOI");
+        String city = normalizeCity(cityCode, "HYD");
 
         if (token != null) {
             try {
@@ -57,7 +57,7 @@ public class AmadeusHotelAdapter implements AmadeusHotelClient {
                     }
                 }
             } catch (Exception e) {
-                log.error("Amadeus hotel search request failed: {}", e.getMessage());
+                log.warn("Amadeus hotel search request failed: {}", e.getMessage());
             }
         }
 
@@ -80,14 +80,14 @@ public class AmadeusHotelAdapter implements AmadeusHotelClient {
                         .hotelId(hotelId != null ? hotelId : "HTL" + (1000 + count))
                         .name(name)
                         .cityCode(city)
-                        .rating(4.2 + (new Random().nextDouble() * 0.6))
-                        .address(line + ", Near Beachfront & Center")
-                        .pricePerNight(2400.0 + (count * 450))
-                        .totalPrice((2400.0 + (count * 450)) * 4)
+                        .rating(4.5 + (count * 0.1))
+                        .address(line + ", Near City Center")
+                        .pricePerNight(3200.0 + (count * 450))
+                        .totalPrice((3200.0 + (count * 450)) * 4)
                         .currency("INR")
                         .roomType("Deluxe King Room")
                         .bedType("1 King Bed")
-                        .amenities(List.of("Free WiFi", "Swimming Pool", "Breakfast Included", "Air Conditioning"))
+                        .amenities(List.of("Free WiFi", "Swimming Pool", "Complimentary Breakfast", "Air Conditioning"))
                         .breakfastIncluded(true)
                         .build());
             } catch (Exception e) {
@@ -99,50 +99,157 @@ public class AmadeusHotelAdapter implements AmadeusHotelClient {
     }
 
     private List<HotelOfferDto> getFallbackHotels(String city) {
+        String upper = city.toUpperCase();
+        if (upper.contains("HYD") || upper.contains("HYDERABAD")) {
+            return List.of(
+                    HotelOfferDto.builder()
+                            .id("ht_hyd_01")
+                            .hotelId("HTL_FALAK_01")
+                            .name("Taj Falaknuma Palace")
+                            .cityCode("HYD")
+                            .rating(4.9)
+                            .address("Engine Bowli, Fatima Nagar, Falaknuma, Hyderabad 500053")
+                            .pricePerNight(18500.0)
+                            .totalPrice(55500.0)
+                            .currency("INR")
+                            .roomType("Palace Grand Heritage Room")
+                            .bedType("1 King Bed")
+                            .amenities(List.of("Free High-Speed WiFi", "Heritage Tour", "Fine Dining", "Royal Spa"))
+                            .breakfastIncluded(true)
+                            .build(),
+                    HotelOfferDto.builder()
+                            .id("ht_hyd_02")
+                            .hotelId("HTL_KOHENUR_02")
+                            .name("ITC Kohenur, a Luxury Collection Hotel")
+                            .cityCode("HYD")
+                            .rating(4.8)
+                            .address("HITEC City, Madhapur, Hyderabad 500081")
+                            .pricePerNight(9500.0)
+                            .totalPrice(28500.0)
+                            .currency("INR")
+                            .roomType("Executive Lake View Suite")
+                            .bedType("1 King Bed")
+                            .amenities(List.of("Free WiFi", "Swimming Pool", "Award-Winning Dining", "Fitness Center"))
+                            .breakfastIncluded(true)
+                            .build(),
+                    HotelOfferDto.builder()
+                            .id("ht_hyd_03")
+                            .hotelId("HTL_HYATT_03")
+                            .name("Park Hyatt Hyderabad")
+                            .cityCode("HYD")
+                            .rating(4.7)
+                            .address("Road No. 2, Banjara Hills, Hyderabad 500034")
+                            .pricePerNight(7800.0)
+                            .totalPrice(23400.0)
+                            .currency("INR")
+                            .roomType("Deluxe Park View Room")
+                            .bedType("1 King Bed")
+                            .amenities(List.of("Free WiFi", "Spa & Sauna", "Infinity Pool", "Complimentary Breakfast"))
+                            .breakfastIncluded(true)
+                            .build()
+            );
+        }
+
+        if (upper.contains("PAR") || upper.contains("PARIS")) {
+            return List.of(
+                    HotelOfferDto.builder()
+                            .id("ht_par_01")
+                            .hotelId("HTL_PULLMAN_01")
+                            .name("Pullman Paris Tour Eiffel")
+                            .cityCode("PAR")
+                            .rating(4.8)
+                            .address("18 Avenue de Suffren, 15th arr., Paris 75015")
+                            .pricePerNight(18000.0)
+                            .totalPrice(54000.0)
+                            .currency("INR")
+                            .roomType("Eiffel View Deluxe Room")
+                            .bedType("1 King Bed")
+                            .amenities(List.of("Free WiFi", "Eiffel Tower View", "French Bistro", "Fitness Center"))
+                            .breakfastIncluded(true)
+                            .build(),
+                    HotelOfferDto.builder()
+                            .id("ht_par_02")
+                            .hotelId("HTL_SEINE_02")
+                            .name("Hotel Eiffel Seine")
+                            .cityCode("PAR")
+                            .rating(4.6)
+                            .address("3 Boulevard de Grenelle, Paris 75015")
+                            .pricePerNight(11500.0)
+                            .totalPrice(34500.0)
+                            .currency("INR")
+                            .roomType("Art Nouveau Standard Room")
+                            .bedType("1 Queen Bed")
+                            .amenities(List.of("Free WiFi", "Metro Access", "Artisan Breakfast", "Air Conditioning"))
+                            .breakfastIncluded(true)
+                            .build()
+            );
+        }
+
+        if (upper.contains("GOI") || upper.contains("GOA")) {
+            return List.of(
+                    HotelOfferDto.builder()
+                            .id("ht_goa_01")
+                            .hotelId("HTL_BAGA_01")
+                            .name("Baga Beach Resort & Spa")
+                            .cityCode("GOI")
+                            .rating(4.7)
+                            .address("Baga Beach Road, Calangute, Goa 403516")
+                            .pricePerNight(2400.0)
+                            .totalPrice(9600.0)
+                            .currency("INR")
+                            .roomType("Ocean View Deluxe Suite")
+                            .bedType("1 King Bed")
+                            .amenities(List.of("Free WiFi", "Infinity Pool", "Complimentary Breakfast", "Spa & Wellness"))
+                            .breakfastIncluded(true)
+                            .build(),
+                    HotelOfferDto.builder()
+                            .id("ht_goa_02")
+                            .hotelId("HTL_LUXE_03")
+                            .name("Taj Fort Aguada Resort")
+                            .cityCode("GOI")
+                            .rating(4.9)
+                            .address("Sinquerim Beach, Candolim, Goa 403515")
+                            .pricePerNight(5500.0)
+                            .totalPrice(22000.0)
+                            .currency("INR")
+                            .roomType("Sea-Facing Luxury Cottage")
+                            .bedType("1 King Bed")
+                            .amenities(List.of("Private Beach", "5-Star Dining", "Spa", "Airport Transfer"))
+                            .breakfastIncluded(true)
+                            .build()
+            );
+        }
+
+        // Generic destination hotels
         return List.of(
                 HotelOfferDto.builder()
-                        .id("ht_001")
-                        .hotelId("HTL_BAGA_01")
-                        .name("Baga Beach Resort & Spa")
+                        .id("ht_gen_01")
+                        .hotelId("HTL_GEN_01")
+                        .name("The Grand " + city + " Landmark Hotel")
                         .cityCode(city)
                         .rating(4.7)
-                        .address("Baga Beach Road, Calangute, Goa 403516")
-                        .pricePerNight(2400.0)
-                        .totalPrice(9600.0)
+                        .address("Main Avenue, Central " + city)
+                        .pricePerNight(4500.0)
+                        .totalPrice(13500.0)
                         .currency("INR")
-                        .roomType("Ocean View Deluxe Suite")
+                        .roomType("Superior King Room")
                         .bedType("1 King Bed")
-                        .amenities(List.of("Free WiFi", "Infinity Pool", "Complimentary Breakfast", "Spa & Wellness"))
+                        .amenities(List.of("Free WiFi", "City View", "Complimentary Breakfast", "Fitness Center"))
                         .breakfastIncluded(true)
                         .build(),
                 HotelOfferDto.builder()
-                        .id("ht_002")
-                        .hotelId("HTL_HERITAGE_02")
-                        .name("Heritage Portuguese Villa Hotel")
+                        .id("ht_gen_02")
+                        .hotelId("HTL_GEN_02")
+                        .name("Courtyard Suites " + city)
                         .cityCode(city)
                         .rating(4.6)
-                        .address("Fontainhas Latin Quarter, Panaji, Goa 403001")
-                        .pricePerNight(1850.0)
-                        .totalPrice(7400.0)
+                        .address("Plaza Road, Downtown " + city)
+                        .pricePerNight(3800.0)
+                        .totalPrice(11400.0)
                         .currency("INR")
-                        .roomType("Heritage Standard Room")
-                        .bedType("2 Twin Beds")
-                        .amenities(List.of("Free WiFi", "Garden Courtyard", "Organic Cafe", "Air Conditioning"))
-                        .breakfastIncluded(true)
-                        .build(),
-                HotelOfferDto.builder()
-                        .id("ht_003")
-                        .hotelId("HTL_LUXE_03")
-                        .name("Taj Fort Aguada Resort")
-                        .cityCode(city)
-                        .rating(4.9)
-                        .address("Sinquerim Beach, Candolim, Goa 403515")
-                        .pricePerNight(5500.0)
-                        .totalPrice(22000.0)
-                        .currency("INR")
-                        .roomType("Sea-Facing Luxury Cottage")
-                        .bedType("1 King Bed")
-                        .amenities(List.of("Private Beach", "5-Star Dining", "Spa", "Airport Transfer"))
+                        .roomType("Deluxe Queen Suite")
+                        .bedType("1 Queen Bed")
+                        .amenities(List.of("Free WiFi", "Swimming Pool", "Restaurant", "Room Service"))
                         .breakfastIncluded(true)
                         .build()
         );
@@ -152,13 +259,14 @@ public class AmadeusHotelAdapter implements AmadeusHotelClient {
         if (location == null || location.isBlank()) return fallback;
         String upper = location.trim().toUpperCase();
         if (upper.length() == 3) return upper;
-        if (upper.contains("HYDERABAD")) return "HYD";
+        if (upper.contains("HYD")) return "HYD";
         if (upper.contains("GOA")) return "GOI";
         if (upper.contains("MUMBAI")) return "BOM";
         if (upper.contains("DELHI")) return "DEL";
         if (upper.contains("BANGALORE") || upper.contains("BENGALURU")) return "BLR";
         if (upper.contains("PARIS")) return "PAR";
         if (upper.contains("LONDON")) return "LON";
-        return fallback;
+        if (upper.contains("TOKYO")) return "TYO";
+        return upper;
     }
 }

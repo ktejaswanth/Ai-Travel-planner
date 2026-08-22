@@ -766,7 +766,7 @@ export const TripDetailsPage: React.FC = () => {
             <div className="space-y-4 max-w-2xl mx-auto">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white capitalize">
-                  Live Flights ({trip.origin || 'HYD'} → {trip.destination || 'GOI'})
+                  Live Flights ({trip.origin || 'Origin'} → {trip.destination})
                 </h3>
                 <Badge variant="sky">Aviationstack Live</Badge>
               </div>
@@ -776,9 +776,9 @@ export const TripDetailsPage: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {(liveFlights && liveFlights.length > 0 ? liveFlights : [
-                    { id: 'fl_1', airlineName: 'IndiGo', flightNumber: '6E-512', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '06:20 AM', arrivalTime: '08:05 AM', duration: '1h 45m', status: 'Scheduled' },
-                    { id: 'fl_2', airlineName: 'Air India', flightNumber: 'AI-804', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '11:30 AM', arrivalTime: '01:25 PM', duration: '1h 55m', status: 'Scheduled' },
-                    { id: 'fl_3', airlineName: 'Akasa Air', flightNumber: 'QP-1302', origin: trip.origin || 'HYD', destination: trip.destination || 'GOI', departureTime: '04:45 PM', arrivalTime: '06:35 PM', duration: '1h 50m', status: 'Scheduled' },
+                    { id: 'fl_1', airlineName: 'IndiGo', flightNumber: '6E-512', origin: trip.origin || 'VGA', destination: trip.destination || 'HYD', departureTime: '06:20 AM', arrivalTime: '07:35 AM', duration: '1h 15m', status: 'Scheduled' },
+                    { id: 'fl_2', airlineName: 'Air India', flightNumber: 'AI-614', origin: trip.origin || 'VGA', destination: trip.destination || 'HYD', departureTime: '11:15 AM', arrivalTime: '12:30 PM', duration: '1h 15m', status: 'Scheduled' },
+                    { id: 'fl_3', airlineName: 'Akasa Air', flightNumber: 'QP-1108', origin: trip.origin || 'VGA', destination: trip.destination || 'HYD', departureTime: '04:45 PM', arrivalTime: '06:05 PM', duration: '1h 20m', status: 'Scheduled' },
                   ]).map((flight: any) => (
                     <Card key={flight.id} className="p-5 space-y-2">
                       <div className="flex items-center justify-between">
@@ -789,7 +789,7 @@ export const TripDetailsPage: React.FC = () => {
                           <div>
                             <h4 className="text-xs font-bold text-slate-900 dark:text-white">{flight.airlineName} ({flight.flightNumber})</h4>
                             <p className="text-[10px] text-slate-400">
-                              {flight.origin} {flight.departureTime} → {flight.destination} {flight.arrivalTime} ({flight.duration})
+                              {flight.origin || trip.origin} {flight.departureTime} → {flight.destination || trip.destination} {flight.arrivalTime} ({flight.duration})
                             </p>
                           </div>
                         </div>
