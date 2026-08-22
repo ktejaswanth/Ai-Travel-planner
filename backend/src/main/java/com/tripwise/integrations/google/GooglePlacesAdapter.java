@@ -1,26 +1,36 @@
 package com.tripwise.integrations.google;
 
+import com.tripwise.integrations.config.IntegrationsProperties;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
 import java.util.*;
 
 @Slf4j
 @Component
 public class GooglePlacesAdapter implements GooglePlacesClient {
 
-    private final String apiKey;
+    private final IntegrationsProperties.GoogleProperties googleProperties;
     private final RestTemplate restTemplate;
 
-    public GooglePlacesAdapter(@Value("${GOOGLE_PLACES_API_KEY:}") String apiKey) {
-        this.apiKey = apiKey;
-        this.restTemplate = new RestTemplate();
+    public GooglePlacesAdapter(IntegrationsProperties properties, RestTemplateBuilder builder) {
+        this.googleProperties = properties.getGoogle();
+        this.restTemplate = builder
+                .setConnectTimeout(Duration.ofSeconds(5))
+                .setReadTimeout(Duration.ofSeconds(10))
+                .build();
     }
 
     @Override
     public List<Map<String, Object>> searchPlaces(String query, String location, int radiusMeters) {
+        String apiKey = googleProperties.getPlacesApiKey();
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = googleProperties.getMapsApiKey();
+        }
+
         if (apiKey == null || apiKey.isBlank()) {
             log.info("GOOGLE_PLACES_API_KEY not provided. Returning curated mock places for query: {}", query);
             return getMockPlaces(query);
@@ -34,8 +44,11 @@ public class GooglePlacesAdapter implements GooglePlacesClient {
             }
 
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
-            if (response != null && response.containsKey("results")) {
-                return (List<Map<String, Object>>) response.get("results");
+            if (response != null && "OK".equals(response.get("status")) && response.containsKey("results")) {
+                List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("results");
+                if (results != null && !results.isEmpty()) {
+                    return results;
+                }
             }
         } catch (Exception e) {
             log.error("Google Places API call failed for query {}: {}", query, e.getMessage());
@@ -46,6 +59,11 @@ public class GooglePlacesAdapter implements GooglePlacesClient {
 
     @Override
     public Map<String, Object> getPlaceDetails(String placeId) {
+        String apiKey = googleProperties.getPlacesApiKey();
+        if (apiKey == null || apiKey.isBlank()) {
+            apiKey = googleProperties.getMapsApiKey();
+        }
+
         if (apiKey == null || apiKey.isBlank()) {
             log.info("GOOGLE_PLACES_API_KEY not provided. Returning mock details for placeId: {}", placeId);
             return getMockPlaceDetails(placeId);
@@ -55,7 +73,7 @@ public class GooglePlacesAdapter implements GooglePlacesClient {
             String url = String.format("https://maps.googleapis.com/maps/api/place/details/json?placeid=%s&key=%s",
                     placeId, apiKey);
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
-            if (response != null && response.containsKey("result")) {
+            if (response != null && "OK".equals(response.get("status")) && response.containsKey("result")) {
                 return (Map<String, Object>) response.get("result");
             }
         } catch (Exception e) {

@@ -18,6 +18,22 @@ jwt:
   secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
   expiration: 86400000 # 24 hours in milliseconds
 
+tripwise:
+  integrations:
+    google:
+      maps-api-key: ${GOOGLE_MAPS_API_KEY:}
+      places-api-key: ${GOOGLE_PLACES_API_KEY:${GOOGLE_MAPS_API_KEY:}}
+    weather:
+      open-weather-api-key: ${OPENWEATHER_API_KEY:}
+    amadeus:
+      client-id: ${AMADEUS_CLIENT_ID:}
+      client-secret: ${AMADEUS_CLIENT_SECRET:}
+      auth-url: ${AMADEUS_AUTH_URL:https://test.api.amadeus.com/v1/security/oauth2/token}
+      base-url: ${AMADEUS_BASE_URL:https://test.api.amadeus.com}
+    gemini:
+      api-key: ${GEMINI_API_KEY:}
+      model: ${GEMINI_MODEL:gemini-1.5-flash}
+
 de:
   flapdoodle:
     mongodb:

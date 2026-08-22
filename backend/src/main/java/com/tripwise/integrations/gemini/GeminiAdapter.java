@@ -2,11 +2,11 @@ package com.tripwise.integrations.gemini;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tripwise.ai.security.PromptSanitizer;
+import com.tripwise.integrations.config.IntegrationsProperties;
 import com.tripwise.integrations.pricing.dto.LivePriceContext;
 import com.tripwise.trip.model.Trip;
 import com.tripwise.trip.model.TripPreference;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -21,17 +21,17 @@ import java.util.*;
 @Component
 public class GeminiAdapter implements GeminiClient {
 
-    private final String apiKey;
+    private final IntegrationsProperties.GeminiProperties geminiProperties;
     private final RestTemplate restTemplate;
     private final PromptSanitizer promptSanitizer;
     private final ObjectMapper objectMapper;
 
     public GeminiAdapter(
-            @Value("${GEMINI_API_KEY:}") String apiKey,
+            IntegrationsProperties properties,
             RestTemplateBuilder restTemplateBuilder,
             PromptSanitizer promptSanitizer,
             ObjectMapper objectMapper) {
-        this.apiKey = apiKey != null ? apiKey.trim() : "";
+        this.geminiProperties = properties.getGemini();
         this.restTemplate = restTemplateBuilder
                 .setConnectTimeout(Duration.ofSeconds(10))
                 .setReadTimeout(Duration.ofSeconds(20))
@@ -149,13 +149,19 @@ public class GeminiAdapter implements GeminiClient {
 
     @Override
     public String generateAIResponse(String prompt) {
-        if (apiKey.isBlank()) {
+        String apiKey = geminiProperties.getApiKey();
+        if (apiKey == null || apiKey.isBlank()) {
             log.debug("GEMINI_API_KEY not configured. Using deterministic generative planner.");
             return null;
         }
 
         try {
-            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey;
+            String model = (geminiProperties.getModel() != null && !geminiProperties.getModel().isBlank())
+                    ? geminiProperties.getModel()
+                    : "gemini-1.5-flash";
+
+            String url = String.format("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
+                    model, apiKey);
 
             Map<String, Object> textPart = Map.of("text", prompt);
             Map<String, Object> contentObj = Map.of("parts", List.of(textPart));
