@@ -50,7 +50,7 @@ export const DashboardPage: React.FC = () => {
     },
   });
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('en-CA');
 
   const upcomingTrips = trips.filter((t) => t.startDate >= today && t.status !== 'CANCELLED');
   const pastTrips = trips.filter((t) => t.endDate < today || t.status === 'COMPLETED');

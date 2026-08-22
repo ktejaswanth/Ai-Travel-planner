@@ -4,6 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -28,7 +29,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('tripwise_token');
       localStorage.removeItem('tripwise_user');
-      if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register') && window.location.pathname !== '/') {
+      const pathname = window.location.pathname;
+      if (!pathname.startsWith('/login') && !pathname.startsWith('/register') && pathname !== '/') {
         window.location.href = '/login?expired=true';
       }
     }

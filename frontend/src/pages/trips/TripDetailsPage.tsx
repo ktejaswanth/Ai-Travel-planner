@@ -51,12 +51,34 @@ export const TripDetailsPage: React.FC = () => {
   const { tripId } = useParams<{ tripId: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<DetailTab>('Overview');
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const { data: trip, isLoading, isError } = useQuery<Trip>({
+  const { data: trip, isLoading, isError, refetch: refetchTrip } = useQuery<Trip>({
     queryKey: ['trip', tripId],
     queryFn: () => tripService.getTripById(tripId!),
     enabled: !!tripId,
   });
+
+  const { data: itineraryData, refetch: refetchItinerary } = useQuery({
+    queryKey: ['itinerary', tripId],
+    queryFn: () => tripService.getItinerary(tripId!),
+    enabled: !!tripId,
+    retry: false,
+  });
+
+  const handleGenerateItinerary = async () => {
+    if (!tripId) return;
+    try {
+      setIsGenerating(true);
+      await tripService.generateItinerary(tripId);
+      await Promise.all([refetchTrip(), refetchItinerary()]);
+      setActiveTab('Itinerary');
+    } catch (err) {
+      console.error('Failed to generate AI itinerary:', err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -90,6 +112,9 @@ export const TripDetailsPage: React.FC = () => {
       </div>
     );
   }
+
+  const budgetPlan = itineraryData?.budgetPlan;
+  const days = itineraryData?.days || [];
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
@@ -126,6 +151,15 @@ export const TripDetailsPage: React.FC = () => {
                 </span>
               </div>
             </div>
+
+            <Button
+              onClick={handleGenerateItinerary}
+              disabled={isGenerating}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold px-6 py-3 rounded-xl shadow-lg shadow-sky-500/20"
+            >
+              <Sparkles className="h-4 w-4" />
+              {isGenerating ? 'Analyzing Prices & Planning...' : days.length > 0 ? 'Replan Itinerary' : 'Generate AI Itinerary'}
+            </Button>
           </div>
         </div>
 
@@ -171,6 +205,38 @@ export const TripDetailsPage: React.FC = () => {
                     <strong className="text-slate-100">{trip.endDate}</strong>
                   </div>
                 </div>
+
+                {budgetPlan && (
+                  <div className="mt-6 pt-4 border-t border-slate-800">
+                    <h4 className="text-sm font-semibold text-sky-400 mb-2">Live Scraped Cost Allocation</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                      <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                        <span className="text-slate-500 block">Flight / Transit</span>
+                        <span className="font-bold text-slate-200">{trip.currency} {budgetPlan.flightAllocation?.toLocaleString()}</span>
+                      </div>
+                      <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                        <span className="text-slate-500 block">Hotel / Stay</span>
+                        <span className="font-bold text-slate-200">{trip.currency} {budgetPlan.hotelAllocation?.toLocaleString()}</span>
+                      </div>
+                      <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                        <span className="text-slate-500 block">Food & Dining</span>
+                        <span className="font-bold text-slate-200">{trip.currency} {budgetPlan.foodAllocation?.toLocaleString()}</span>
+                      </div>
+                      <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                        <span className="text-slate-500 block">Activities & Entry</span>
+                        <span className="font-bold text-slate-200">{trip.currency} {budgetPlan.activitiesAllocation?.toLocaleString()}</span>
+                      </div>
+                      <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                        <span className="text-slate-500 block">Local Transit</span>
+                        <span className="font-bold text-slate-200">{trip.currency} {budgetPlan.transportAllocation?.toLocaleString()}</span>
+                      </div>
+                      <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                        <span className="text-slate-500 block">Emergency Buffer</span>
+                        <span className="font-bold text-emerald-400">{trip.currency} {budgetPlan.emergencyBuffer?.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </Card>
 
               <Card className="space-y-4">
@@ -201,7 +267,102 @@ export const TripDetailsPage: React.FC = () => {
             </div>
           )}
 
-          {activeTab !== 'Overview' && (
+          {activeTab === 'Itinerary' && (
+            <div className="space-y-6">
+              {days.length === 0 ? (
+                <Card className="p-12 text-center space-y-4 border-dashed border-slate-800 max-w-2xl mx-auto">
+                  <div className="p-4 bg-sky-500/10 text-sky-400 rounded-full w-fit mx-auto">
+                    <Sparkles className="h-8 w-8" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">No Itinerary Generated Yet</h3>
+                    <p className="text-sm text-slate-400 mt-2">
+                      Click the "Generate AI Itinerary" button to scrape live market prices and build your custom plan.
+                    </p>
+                  </div>
+                  <Button onClick={handleGenerateItinerary} disabled={isGenerating}>
+                    Generate Plan Now
+                  </Button>
+                </Card>
+              ) : (
+                <div className="space-y-6">
+                  {days.map((day) => (
+                    <Card key={day.dayNumber} className="space-y-4 p-6">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div>
+                          <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">Day {day.dayNumber}</span>
+                          <h3 className="text-lg font-bold text-white">{day.title}</h3>
+                        </div>
+                        <span className="text-xs text-slate-400 font-medium">{day.date}</span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {day.activities?.map((activity, idx) => (
+                          <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-slate-900/60 rounded-xl border border-slate-800/80 gap-3">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-sky-400">{activity.startTime} - {activity.endTime}</span>
+                                <Badge variant="indigo">{activity.category}</Badge>
+                              </div>
+                              <h4 className="text-sm font-bold text-slate-100">{activity.title}</h4>
+                              <p className="text-xs text-slate-400">{activity.description}</p>
+                            </div>
+                            <div className="text-right whitespace-nowrap">
+                              <span className="text-xs text-slate-500 block">Est. Cost</span>
+                              <span className="text-sm font-bold text-emerald-400">
+                                {activity.currency} {activity.estimatedCost?.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'Budget' && (
+            <Card className="space-y-6 p-6">
+              <h3 className="text-lg font-bold text-white border-b border-slate-800 pb-3">Live Budget & Market Allocations</h3>
+              {budgetPlan ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+                      <span className="text-xs text-slate-500 block uppercase">Total Trip Budget</span>
+                      <span className="text-xl font-black text-white">{trip.currency} {budgetPlan.totalBudget?.toLocaleString()}</span>
+                    </div>
+                    <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+                      <span className="text-xs text-slate-500 block uppercase">Estimated Total Cost</span>
+                      <span className="text-xl font-black text-sky-400">{trip.currency} {budgetPlan.totalEstimated?.toLocaleString()}</span>
+                    </div>
+                    <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+                      <span className="text-xs text-slate-500 block uppercase">Remaining Buffer</span>
+                      <span className="text-xl font-black text-emerald-400">{trip.currency} {budgetPlan.remaining?.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-slate-300">
+                      <span>Budget Utilization</span>
+                      <span>{budgetPlan.utilizationPercentage}% Allocated</span>
+                    </div>
+                    <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-sky-500 to-emerald-500 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, budgetPlan.utilizationPercentage || 0)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400">Generate an AI itinerary to compute real-time scraped budget allocations.</p>
+              )}
+            </Card>
+          )}
+
+          {activeTab !== 'Overview' && activeTab !== 'Itinerary' && activeTab !== 'Budget' && (
             <Card className="p-12 text-center space-y-4 border-dashed border-slate-800 max-w-2xl mx-auto">
               <div className="p-4 bg-sky-500/10 text-sky-400 rounded-full w-fit mx-auto">
                 <Sparkles className="h-8 w-8" />
@@ -209,7 +370,7 @@ export const TripDetailsPage: React.FC = () => {
               <div>
                 <h3 className="text-xl font-bold text-white">{activeTab} Module</h3>
                 <p className="text-sm text-slate-400 mt-2 leading-relaxed">
-                  This section is architected and ready for future integrations (Gemini AI, Google Maps, OpenWeather, Amadeus APIs).
+                  This section is architected and ready for future integrations (Google Maps, OpenWeather, Amadeus APIs).
                 </p>
               </div>
             </Card>
