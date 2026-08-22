@@ -371,7 +371,7 @@ Used/planned for:
 * Trip replanning
 * Personalized suggestions
 
-## 📍 Google Maps / Places
+## 📍 Google Maps
 
 Used/planned for:
 
@@ -409,13 +409,6 @@ Can be used for:
 * Airline information
 * Airport information
 
-## ✈️ Amadeus
-
-The backend architecture also contains Amadeus integration interfaces for:
-
-* Flight search
-* Hotel search
-
 ---
 
 # 🔑 Environment Variables
@@ -443,26 +436,6 @@ AMADEUS_CLIENT_SECRET=
 
 GEMINI_API_KEY=
 ```
-
-### ⚠️ Security
-
-Never commit real API keys, passwords, JWT secrets, or database credentials to GitHub.
-
-Use:
-
-```text
-.env
-```
-
-for local secrets and:
-
-```text
-.env.example
-```
-
-for placeholder values.
-
----
 
 # 🚀 Getting Started
 
@@ -574,38 +547,6 @@ docker-compose down
 
 ---
 
-# 🧪 Testing
-
-## Backend
-
-From the backend directory:
-
-```bash
-mvn test
-```
-
-## Frontend
-
-From the frontend directory:
-
-```bash
-npm test
-```
-
-## Frontend Build
-
-```bash
-npm run build
-```
-
-## Frontend Lint
-
-```bash
-npm run lint
-```
-
----
-
 # 📚 API Documentation
 
 The backend uses SpringDoc OpenAPI.
@@ -624,37 +565,6 @@ Users
 Trips
 Places
 ```
-
-Additional domain modules include:
-
-```text
-Itinerary
-Budget
-Expenses
-Flights
-Hotels
-Weather
-Packing
-AI Interactions
-Audit Logs
-Trip Replanning
-```
-
----
-
-# 🎨 Light & Dark Mode
-
-TripWise AI supports light and dark themes through a dedicated theme context.
-
-```text
-ThemeContext
-     │
-     ├── Light Mode
-     │
-     └── Dark Mode
-```
-
-The theme preference can be persisted locally so that users can retain their selected appearance.
 
 ---
 
@@ -702,27 +612,9 @@ The theme preference can be persisted locally so that users can retain their sel
 
 ---
 
-# 🛣️ Future Enhancements
 
-Planned and extensible features include:
 
-* Gemini-powered itinerary generation
-* AI travel assistant
-* Geoapify Places integration
-* Google Maps integration
-* Google Routes integration
-* OpenWeather-powered recommendations
-* Aviationstack flight data
-* Enhanced hotel search
-* Dynamic budget optimization
-* Weather-aware itinerary planning
-* Personalized activity recommendations
-* AI-powered trip replanning
-* Real-time travel information
-
----
-
-# 🏆 Hackathon Value Proposition
+# 🚀 Innovation & Impact
 
 TripWise AI addresses a common travel-planning problem: travelers often need to switch between multiple applications to manage destinations, itineraries, maps, weather, flights, accommodation, budgets, and packing.
 
@@ -760,11 +652,23 @@ The modular architecture makes it possible to add new travel-data providers and 
 
 This project is developed as an academic/hackathon project.
 
-```
-```
 
 ## 📄 Documentation Links
 - [System Architecture Document](docs/ARCHITECTURE.md)
 - [Database Schema & Design](docs/DATABASE.md)
 - [REST API Specifications](docs/API.md)
 - [Detailed Setup Guide](docs/SETUP.md)
+
+# 👥 Team
+
+**Team Name:** Group 11
+
+**Team Members:**
+
+- Kadumuri Pravalika Reddy
+- KARYAMPUDI BHAVANA
+- Kondaveti Tejaswanth
+- MAHITA CHOUDARY BORRA
+- Lakshmi Sai Archana Munaga
+
+**Hackathon:** YOUR HACKATHON NAME
