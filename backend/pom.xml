@@ -71,6 +71,14 @@
             <version>${springdoc.version}</version>
         </dependency>
         
+        <!-- Embedded MongoDB for zero-config local execution -->
+        <dependency>
+            <groupId>de.flapdoodle.embed</groupId>
+            <artifactId>de.flapdoodle.embed.mongo.spring30x</artifactId>
+            <version>4.11.0</version>
+            <scope>runtime</scope>
+        </dependency>
+        
         <!-- Developer Tools & Boilerplate reduction -->
         <dependency>
             <groupId>org.projectlombok</groupId>
