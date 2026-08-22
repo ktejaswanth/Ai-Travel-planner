@@ -1,0 +1,29 @@
+# OS & IDE Files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.iml
+
+# Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+frontend/.env
+frontend/coverage/
+
+# Java / Maven / Backend
+backend/target/
+backend/.mvn/
+*.class
+*.jar
+*.war
+
+# Environment Secrets
+.env
+
+# Logs
+*.log
+logs/
