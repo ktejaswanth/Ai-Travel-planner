@@ -32,6 +32,7 @@ export const LoginPage: React.FC = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -103,6 +104,25 @@ export const LoginPage: React.FC = () => {
 
             <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full mt-2">
               Sign In
+            </Button>
+
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+              <span className="flex-shrink mx-3 text-[10px] uppercase font-bold text-slate-400">Or Demo</span>
+              <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="md"
+              className="w-full text-xs"
+              onClick={() => {
+                setValue('email', 'demo@tripwise.ai');
+                setValue('password', 'Password123!');
+              }}
+            >
+              🔑 Auto-Fill Demo Credentials
             </Button>
           </form>
 

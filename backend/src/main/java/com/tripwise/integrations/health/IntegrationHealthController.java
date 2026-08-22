@@ -22,7 +22,7 @@ public class IntegrationHealthController {
     private final IntegrationsProperties integrationsProperties;
 
     @GetMapping("/health")
-    @Operation(summary = "Check configuration status of all 5 external API provider integrations")
+    @Operation(summary = "Check configuration status of all external API provider integrations")
     public ResponseEntity<ApiResponse<Map<String, String>>> getIntegrationsHealth() {
         Map<String, String> health = new LinkedHashMap<>();
 
@@ -39,12 +39,13 @@ public class IntegrationHealthController {
         String weatherKey = integrationsProperties.getWeather().getOpenWeatherApiKey();
         health.put("openWeather", (weatherKey != null && !weatherKey.isBlank()) ? "CONFIGURED" : "NOT_CONFIGURED");
 
-        // 4. Amadeus (Flights & Hotels)
+        // 4. Flights (Aviationstack or Amadeus)
+        String aviationKey = integrationsProperties.getAviationstack().getApiKey();
         String amadeusClientId = integrationsProperties.getAmadeus().getClientId();
-        String amadeusClientSecret = integrationsProperties.getAmadeus().getClientSecret();
-        boolean amadeusConfigured = (amadeusClientId != null && !amadeusClientId.isBlank()) &&
-                (amadeusClientSecret != null && !amadeusClientSecret.isBlank());
-        health.put("amadeus", amadeusConfigured ? "CONFIGURED" : "NOT_CONFIGURED");
+        boolean flightsConfigured = (aviationKey != null && !aviationKey.isBlank()) || (amadeusClientId != null && !amadeusClientId.isBlank());
+        health.put("flights", flightsConfigured ? "CONFIGURED" : "NOT_CONFIGURED");
+        health.put("aviationstack", (aviationKey != null && !aviationKey.isBlank()) ? "CONFIGURED" : "NOT_CONFIGURED");
+        health.put("amadeus", (amadeusClientId != null && !amadeusClientId.isBlank()) ? "CONFIGURED" : "NOT_CONFIGURED");
 
         // 5. Gemini AI
         String geminiKey = integrationsProperties.getGemini().getApiKey();

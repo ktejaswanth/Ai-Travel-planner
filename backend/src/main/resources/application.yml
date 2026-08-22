@@ -6,6 +6,8 @@ server:
 spring:
   application:
     name: tripwise-backend
+  main:
+    allow-bean-definition-overriding: true
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/tripwise_db}
@@ -30,6 +32,9 @@ tripwise:
       client-secret: ${AMADEUS_CLIENT_SECRET:}
       auth-url: ${AMADEUS_AUTH_URL:https://test.api.amadeus.com/v1/security/oauth2/token}
       base-url: ${AMADEUS_BASE_URL:https://test.api.amadeus.com}
+    aviationstack:
+      api-key: ${AVIATIONSTACK_API_KEY:}
+      base-url: ${AVIATIONSTACK_BASE_URL:http://api.aviationstack.com/v1}
     gemini:
       api-key: ${GEMINI_API_KEY:}
       model: ${GEMINI_MODEL:gemini-1.5-flash}

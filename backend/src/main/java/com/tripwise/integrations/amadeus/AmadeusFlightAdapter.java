@@ -17,6 +17,7 @@ import java.util.*;
 public class AmadeusFlightAdapter implements AmadeusFlightClient {
 
     private final IntegrationsProperties.AmadeusProperties amadeusProperties;
+    private final IntegrationsProperties.AviationstackProperties aviationstackProperties;
     private final AmadeusAuthService amadeusAuthService;
     private final RestTemplate restTemplate;
 
@@ -25,6 +26,7 @@ public class AmadeusFlightAdapter implements AmadeusFlightClient {
             AmadeusAuthService amadeusAuthService,
             RestTemplateBuilder builder) {
         this.amadeusProperties = properties.getAmadeus();
+        this.aviationstackProperties = properties.getAviationstack();
         this.amadeusAuthService = amadeusAuthService;
         this.restTemplate = builder
                 .setConnectTimeout(Duration.ofSeconds(6))
@@ -36,11 +38,32 @@ public class AmadeusFlightAdapter implements AmadeusFlightClient {
     public List<FlightOfferDto> searchFlightOffers(
             String origin, String destination, LocalDate departureDate, LocalDate returnDate, int adults) {
 
-        String token = amadeusAuthService.getAccessToken();
         String originIata = normalizeIata(origin, "HYD");
         String destIata = normalizeIata(destination, "GOI");
         String depDateStr = (departureDate != null ? departureDate : LocalDate.now().plusDays(7)).toString();
 
+        // 1. Check Aviationstack Live API first
+        String aviationKey = aviationstackProperties.getApiKey();
+        if (aviationKey != null && !aviationKey.isBlank()) {
+            try {
+                String url = String.format("%s/flights?access_key=%s&dep_iata=%s&limit=5",
+                        aviationstackProperties.getBaseUrl(), aviationKey, originIata);
+
+                Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+                if (response != null && response.containsKey("data")) {
+                    List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
+                    if (data != null && !data.isEmpty()) {
+                        log.info("Successfully fetched {} live flights from Aviationstack API", data.size());
+                        return mapAviationstackFlightsToDto(data, originIata, destIata);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Aviationstack API search returned error: {}. Attempting fallback.", e.getMessage());
+            }
+        }
+
+        // 2. Check Amadeus OAuth2 API
+        String token = amadeusAuthService.getAccessToken();
         if (token != null) {
             try {
                 String url = String.format("%s/v2/shopping/flight-offers?originLocationCode=%s&destinationLocationCode=%s&departureDate=%s&adults=%d&max=5",
@@ -70,6 +93,63 @@ public class AmadeusFlightAdapter implements AmadeusFlightClient {
         }
 
         return getFallbackFlights(originIata, destIata, depDateStr);
+    }
+
+    private List<FlightOfferDto> mapAviationstackFlightsToDto(List<Map<String, Object>> data, String defaultOrigin, String defaultDest) {
+        List<FlightOfferDto> result = new ArrayList<>();
+        int count = 0;
+
+        for (Map<String, Object> item : data) {
+            if (count++ >= 5) break;
+            try {
+                Map<String, Object> departure = (Map<String, Object>) item.get("departure");
+                Map<String, Object> arrival = (Map<String, Object>) item.get("arrival");
+                Map<String, Object> airline = (Map<String, Object>) item.get("airline");
+                Map<String, Object> flight = (Map<String, Object>) item.get("flight");
+
+                String airlineName = airline != null ? (String) airline.getOrDefault("name", "Commercial Airline") : "IndiGo";
+                String airlineIata = airline != null ? (String) airline.getOrDefault("iata", "6E") : "6E";
+                String flightIata = flight != null ? (String) flight.getOrDefault("iata", airlineIata + "-" + (500 + count * 12)) : airlineIata + "-" + (500 + count * 12);
+
+                String depTime = "06:30 AM";
+                String arrTime = "08:45 AM";
+
+                if (departure != null && departure.get("scheduled") instanceof String) {
+                    String sch = (String) departure.get("scheduled");
+                    if (sch.length() >= 16) depTime = sch.substring(11, 16);
+                }
+                if (arrival != null && arrival.get("scheduled") instanceof String) {
+                    String sch = (String) arrival.get("scheduled");
+                    if (sch.length() >= 16) arrTime = sch.substring(11, 16);
+                }
+
+                String orig = departure != null && departure.containsKey("iata") && departure.get("iata") != null ? (String) departure.get("iata") : defaultOrigin;
+                String dest = arrival != null && arrival.containsKey("iata") && arrival.get("iata") != null ? (String) arrival.get("iata") : defaultDest;
+
+                double price = 6800.0 + (count * 650.0);
+
+                result.add(FlightOfferDto.builder()
+                        .id("av_" + UUID.randomUUID().toString().substring(0, 8))
+                        .airlineCode(airlineIata)
+                        .airlineName(airlineName)
+                        .flightNumber(flightIata)
+                        .origin(orig)
+                        .destination(dest)
+                        .departureTime(depTime)
+                        .arrivalTime(arrTime)
+                        .duration("1h 55m")
+                        .numberOfStops(0)
+                        .price(price)
+                        .currency("INR")
+                        .availableSeats(8)
+                        .cabinClass("ECONOMY")
+                        .build());
+            } catch (Exception e) {
+                log.warn("Failed to parse Aviationstack item: {}", e.getMessage());
+            }
+        }
+
+        return result.isEmpty() ? getFallbackFlights(defaultOrigin, defaultDest, "2026-08-29") : result;
     }
 
     private List<FlightOfferDto> mapAmadeusFlightsToDto(List<Map<String, Object>> data, String origin, String dest) {
