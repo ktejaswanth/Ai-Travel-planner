@@ -8,7 +8,7 @@ spring:
     name: tripwise-backend
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/tripwise_db}
+      uri: mongodb+srv://2300031638_db_user:Tdlrx40XBHf6gFkh@aitravelplanner.aemt3vi.mongodb.net/tripwise_db?retryWrites=true&w=majority
       auto-index-creation: true
   jackson:
     serialization:
