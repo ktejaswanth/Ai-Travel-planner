@@ -17,20 +17,13 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
-    private static final String DEFAULT_DEV_SECRET = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
     private final SecretKey key;
     private final long expirationMs;
 
     public JwtTokenProvider(
             @Value("${jwt.secret:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}") String secret,
             @Value("${jwt.expiration:86400000}") long expirationMs) {
-        if (secret == null || secret.trim().length() < 32) {
-            throw new IllegalArgumentException("JWT secret must be at least 32 characters (256 bits) long.");
-        }
-        if (DEFAULT_DEV_SECRET.equals(secret.trim())) {
-            log.warn("SECURITY WARNING: Using default development JWT secret. Please set a secure JWT_SECRET environment variable for production.");
-        }
-        this.key = Keys.hmacShaKeyFor(secret.trim().getBytes(StandardCharsets.UTF_8));
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationMs = expirationMs;
     }
 

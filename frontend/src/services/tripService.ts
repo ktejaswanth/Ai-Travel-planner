@@ -26,14 +26,4 @@ export const tripService = {
   async deleteTrip(tripId: string): Promise<void> {
     await api.delete<ApiResponse<void>>(`/trips/${tripId}`);
   },
-
-  async generateItinerary(tripId: string): Promise<import('../types/trip').ItineraryResponse> {
-    const response = await api.post<ApiResponse<import('../types/trip').ItineraryResponse>>(`/trips/${tripId}/generate-itinerary`);
-    return response.data.data;
-  },
-
-  async getItinerary(tripId: string): Promise<import('../types/trip').ItineraryResponse> {
-    const response = await api.get<ApiResponse<import('../types/trip').ItineraryResponse>>(`/trips/${tripId}/itinerary`);
-    return response.data.data;
-  },
 };

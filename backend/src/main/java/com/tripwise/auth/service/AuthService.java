@@ -26,13 +26,13 @@ public class AuthService {
     private final UserService userService;
 
     public AuthResponse register(RegisterRequest request) {
-        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        String normalizedEmail = request.getEmail().toLowerCase();
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new DuplicateResourceException("An account with this email already exists: " + request.getEmail());
         }
 
         User user = User.builder()
-                .name(request.getName().trim())
+                .name(request.getName())
                 .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
@@ -48,7 +48,7 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        String normalizedEmail = request.getEmail().toLowerCase();
         User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 

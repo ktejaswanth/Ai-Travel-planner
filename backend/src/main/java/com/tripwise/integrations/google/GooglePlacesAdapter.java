@@ -2,13 +2,9 @@ package com.tripwise.integrations.google;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
-import java.time.Duration;
 import java.util.*;
 
 @Slf4j
@@ -18,36 +14,26 @@ public class GooglePlacesAdapter implements GooglePlacesClient {
     private final String apiKey;
     private final RestTemplate restTemplate;
 
-    public GooglePlacesAdapter(
-            @Value("${GOOGLE_PLACES_API_KEY:}") String apiKey,
-            RestTemplateBuilder restTemplateBuilder) {
-        this.apiKey = apiKey != null ? apiKey.trim() : "";
-        this.restTemplate = restTemplateBuilder
-                .setConnectTimeout(Duration.ofSeconds(5))
-                .setReadTimeout(Duration.ofSeconds(5))
-                .build();
+    public GooglePlacesAdapter(@Value("${GOOGLE_PLACES_API_KEY:}") String apiKey) {
+        this.apiKey = apiKey;
+        this.restTemplate = new RestTemplate();
     }
 
     @Override
     public List<Map<String, Object>> searchPlaces(String query, String location, int radiusMeters) {
-        if (apiKey.isBlank()) {
-            log.debug("GOOGLE_PLACES_API_KEY not provided. Returning curated mock places for query: {}", query);
+        if (apiKey == null || apiKey.isBlank()) {
+            log.info("GOOGLE_PLACES_API_KEY not provided. Returning curated mock places for query: {}", query);
             return getMockPlaces(query);
         }
 
         try {
-            UriComponentsBuilder builder = UriComponentsBuilder
-                    .fromHttpUrl("https://maps.googleapis.com/maps/api/place/textsearch/json")
-                    .queryParam("query", query)
-                    .queryParam("key", apiKey);
-
+            String url = String.format("https://maps.googleapis.com/maps/api/place/textsearch/json?query=%s&key=%s",
+                    query, apiKey);
             if (location != null && !location.isBlank()) {
-                builder.queryParam("location", location)
-                        .queryParam("radius", Math.max(100, Math.min(radiusMeters, 50000)));
+                url += "&location=" + location + "&radius=" + radiusMeters;
             }
 
-            URI uri = builder.build().encode().toUri();
-            Map<String, Object> response = restTemplate.getForObject(uri, Map.class);
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
             if (response != null && response.containsKey("results")) {
                 return (List<Map<String, Object>>) response.get("results");
             }
@@ -60,21 +46,15 @@ public class GooglePlacesAdapter implements GooglePlacesClient {
 
     @Override
     public Map<String, Object> getPlaceDetails(String placeId) {
-        if (apiKey.isBlank()) {
-            log.debug("GOOGLE_PLACES_API_KEY not provided. Returning mock details for placeId: {}", placeId);
+        if (apiKey == null || apiKey.isBlank()) {
+            log.info("GOOGLE_PLACES_API_KEY not provided. Returning mock details for placeId: {}", placeId);
             return getMockPlaceDetails(placeId);
         }
 
         try {
-            URI uri = UriComponentsBuilder
-                    .fromHttpUrl("https://maps.googleapis.com/maps/api/place/details/json")
-                    .queryParam("placeid", placeId)
-                    .queryParam("key", apiKey)
-                    .build()
-                    .encode()
-                    .toUri();
-
-            Map<String, Object> response = restTemplate.getForObject(uri, Map.class);
+            String url = String.format("https://maps.googleapis.com/maps/api/place/details/json?placeid=%s&key=%s",
+                    placeId, apiKey);
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
             if (response != null && response.containsKey("result")) {
                 return (Map<String, Object>) response.get("result");
             }
