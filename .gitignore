@@ -24,6 +24,8 @@ backend/.mvn/
 # Environment Secrets
 .env
 
+
+
 # Logs
 *.log
 logs/
