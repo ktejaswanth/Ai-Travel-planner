@@ -670,5 +670,3 @@ This project is developed as an academic/hackathon project.
 - Kondaveti Tejaswanth
 - MAHITA CHOUDARY BORRA
 - Lakshmi Sai Archana Munaga
-
-**Hackathon:** YOUR HACKATHON NAME
